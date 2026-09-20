@@ -11,19 +11,19 @@
 :root{
   --bg:#E7ECF1; --paper:#FFFFFF; --ink:#16202E; --muted:#5B6778; --line:#CFD7E0; --soft:#F1F4F7;
   --board:#131C28; --sign:#F5C400;
-  --c-s:#2E5E8C; --c-b:#C2410C; --c-d:#6B4FA0; --c-t:#3F7D4E; --warn:#B45309; --over:#D97706;
+  --c-s:#2E5E8C; --c-b:#C2410C; --c-r:#0F7C7C; --c-d:#6B4FA0; --c-t:#3F7D4E; --warn:#B45309; --over:#D97706;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --bg:#0E141C; --paper:#17202C; --ink:#E6ECF2; --muted:#98A5B4; --line:#2A3746; --soft:#1E2936;
-    --board:#080C12; --c-s:#6FA3D6; --c-b:#F08A5D; --c-d:#A98BE0; --c-t:#78B98A; --warn:#F2A541; --over:#F2A541;
+    --board:#080C12; --c-s:#6FA3D6; --c-b:#F08A5D; --c-r:#5CC6C0; --c-d:#A98BE0; --c-t:#78B98A; --warn:#F2A541; --over:#F2A541;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0E141C; --paper:#17202C; --ink:#E6ECF2; --muted:#98A5B4; --line:#2A3746; --soft:#1E2936;
-  --board:#080C12; --c-s:#6FA3D6; --c-b:#F08A5D; --c-d:#A98BE0; --c-t:#78B98A; --warn:#F2A541; --over:#F2A541;
+  --board:#080C12; --c-s:#6FA3D6; --c-b:#F08A5D; --c-r:#5CC6C0; --c-d:#A98BE0; --c-t:#78B98A; --warn:#F2A541; --over:#F2A541;
 }
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -57,7 +57,7 @@ button{cursor:pointer}
 .laundry .sw::after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#8C95A3;transition:.2s}
 .laundry[aria-pressed="true"] .sw{background:var(--sign)}
 .laundry[aria-pressed="true"] .sw::after{inset-inline-start:16px;background:#16202E}
-.meters{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.meters{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px}
 .meter{font-size:14px;color:#D6D0B4}
 .meter b{display:block;font-family:"Karantina",sans-serif;font-size:28px;line-height:1;color:var(--sign);font-weight:700}
 .meter .bar{height:4px;background:#2A3442;border-radius:2px;margin-top:5px;overflow:hidden}
@@ -266,7 +266,7 @@ body.selecting .doorbtn{display:none}
 <div class="selbar" id="selbar" hidden>
   <div class="selhead"><b id="selcount"></b><button data-bulk="clear">ניקוי בחירה</button><button data-bulk="exit">סיימתי</button></div>
   <div class="selrow"><span>להעביר ל:</span><button data-bulk="p:now">עכשיו</button><button data-bulk="p:later">אחר כך</button><button data-bulk="p:last">רגע לפני</button></div>
-  <div class="selrow"><span>לתיק:</span><button data-bulk="b:s">מזוודה</button><button data-bulk="b:b">תיק גב</button><button data-bulk="b:d">מסמכים</button><button data-bulk="b:t">משימות</button></div>
+  <div class="selrow"><span>לתיק:</span><button data-bulk="b:s">מזוודה</button><button data-bulk="b:b">תיק גב</button><button data-bulk="b:r">תיק רחצה</button><button data-bulk="b:d">מסמכים</button><button data-bulk="b:t">משימות</button></div>
   <div class="selrow"><button data-bulk="skip">אין צורך</button><button data-bulk="unskip">צריך בכל זאת</button><button class="danger" data-bulk="del">מחיקה</button></div>
 </div>
 
@@ -281,9 +281,11 @@ body.selecting .doorbtn{display:none}
 const BAGS = {
   s:{name:"מזוודה", where:"נכנסת לבטן המטוס", c:"var(--c-s)"},
   b:{name:"תיק גב", where:"עולה איתך למטוס", c:"var(--c-b)"},
+  r:{name:"תיק רחצה", where:"נכנס למזוודה", c:"var(--c-r)"},
   d:{name:"מסמכים וכסף", where:"בתיק הגב, בתא אחד", c:"var(--c-d)"},
   t:{name:"משימות", where:"לסגור לפני שטסים", c:"var(--c-t)"}
 };
+const QTY_BAGS = ["s","b","r"];
 const PHASES = {now:"עכשיו", later:"אחר כך", last:"רגע לפני"};
 const DEFAULT_DAYS = 7, LAUNDRY_CAP = 7;
 
@@ -330,32 +332,32 @@ const BASE = [
  I("s61","מטען לשעון","s","last","אלקטרוניקה למזוודה","","",1),
  I("s62","מטען פלאפון שני","s","last","אלקטרוניקה למזוודה","","",1),
  I("s63","מטען לפטופ רזרבי","s","last","אלקטרוניקה למזוודה","","השניים שבשימוש נוסעים בתיק הגב",1),
- I("s70","קרם הגנה (בקבוק גדול)","s","now","תיק רחצה","","",1),
- I("s71","אלוורה","s","now","תיק רחצה","","",1),
- I("s72","בושם","s","now","תיק רחצה","","",1),
- I("s73","קרם נגד פריחה","s","now","תיק רחצה","","",1),
- I("s74","וזלין","s","now","תיק רחצה","","",1),
- I("s75","מספריים","s","now","תיק רחצה","","",1),
- I("s76","קוצץ","s","now","תיק רחצה","","",1),
- I("s77","קוצץ שיער","s","now","תיק רחצה","","",1),
- I("s78","מדחום","s","now","תיק רחצה","","",1),
- I("s79","מברשת שיניים","s","last","תיק רחצה","","",1),
- I("s80","משחת שיניים","s","last","תיק רחצה","","",1),
- I("s81","דאודרנט","s","last","תיק רחצה","","",1),
- I("s82","מכונת גילוח","s","last","תיק רחצה","","",1),
- I("s90","אקמול","s","now","עזרה ראשונה ותרופות","","",1),
- I("s91","אופטלגין","s","now","עזרה ראשונה ותרופות","","",1),
- I("s92","אדוויל","s","now","עזרה ראשונה ותרופות","","",1),
- I("s93","כדורים נגד צינון","s","now","עזרה ראשונה ותרופות","","",1),
- I("s94","סנו די","s","now","עזרה ראשונה ותרופות","","",1),
- I("s95","פלסטרים","s","now","עזרה ראשונה ותרופות","","",1),
- I("s96","תחבושות","s","now","עזרה ראשונה ותרופות","","",1),
- I("s97","תחבושת אלסטית","s","now","עזרה ראשונה ותרופות","","",1),
- I("s98","יוד","s","now","עזרה ראשונה ותרופות","","",1),
- I("s99","חומר חיטוי","s","now","עזרה ראשונה ותרופות","","",1),
- I("s100","משחה לשפשפות","s","now","עזרה ראשונה ותרופות","","",1),
- I("s101","משחת שרירים","s","now","עזרה ראשונה ותרופות","","",1),
- I("s102","משחה נגד כוויות","s","now","עזרה ראשונה ותרופות","","",1),
+ I("s70","קרם הגנה (בקבוק גדול)","r","now","רחצה וטיפוח","","",1),
+ I("s71","אלוורה","r","now","רחצה וטיפוח","","",1),
+ I("s72","בושם","r","now","רחצה וטיפוח","","",1),
+ I("s73","קרם נגד פריחה","r","now","רחצה וטיפוח","","",1),
+ I("s74","וזלין","r","now","רחצה וטיפוח","","",1),
+ I("s75","מספריים","r","now","רחצה וטיפוח","","",1),
+ I("s76","קוצץ","r","now","רחצה וטיפוח","","",1),
+ I("s77","קוצץ שיער","r","now","רחצה וטיפוח","","",1),
+ I("s78","מדחום","r","now","רחצה וטיפוח","","",1),
+ I("s79","מברשת שיניים","r","last","רחצה וטיפוח","","",1),
+ I("s80","משחת שיניים","r","last","רחצה וטיפוח","","",1),
+ I("s81","דאודרנט","r","last","רחצה וטיפוח","","",1),
+ I("s82","מכונת גילוח","r","last","רחצה וטיפוח","","",1),
+ I("s90","אקמול","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s91","אופטלגין","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s92","אדוויל","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s93","כדורים נגד צינון","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s94","סנו די","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s95","פלסטרים","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s96","תחבושות","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s97","תחבושת אלסטית","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s98","יוד","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s99","חומר חיטוי","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s100","משחה לשפשפות","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s101","משחת שרירים","r","now","עזרה ראשונה ותרופות","","",1),
+ I("s102","משחה נגד כוויות","r","now","עזרה ראשונה ותרופות","","",1),
  I("b1","לפטופים","b","last","מחשבים ומסכים","door","",2),
  I("b2","מטעני לפטופ","b","last","מחשבים ומסכים","","",2),
  I("b3","פלאפון","b","last","מחשבים ומסכים","door","",1),
@@ -481,7 +483,7 @@ function normalize(s){
   const o = Object.assign(blank(), s || {});
   if(o.date && !o.dep){ o.dep = o.date; } delete o.date;
   // old custom items had no qty
-  o.custom = (o.custom||[]).map(c => ({q:(c.b==="s"||c.b==="b")?1:null, ...c, g: (c.g==="טעינה"||c.g==="כבלים וראשים") ? "טעינה וכבלים" : c.g}));
+  o.custom = (o.custom||[]).map(c => ({q:QTY_BAGS.includes(c.b)?1:null, ...c, g: (c.g==="טעינה"||c.g==="כבלים וראשים") ? "טעינה וכבלים" : c.g}));
   return o;
 }
 function lsLoad(){ try{ const r = localStorage.getItem(LS); if(r) state = normalize(JSON.parse(r)); }catch(e){} }
@@ -564,11 +566,11 @@ function leftHTML(x){
 }
 function itemHTML(x){
   const badges = [];
-  if(x.f.includes("carry")) badges.push(x.b==="s" ? '<span class="badge warnb">⚠ אסור במזוודה — להחזיר לתיק גב</span>' : '<span class="badge carry">רק בתיק גב</span>');
-  if(x.f.includes("liquid") && x.b==="s") badges.push('<span class="badge wear">במזוודה אין מגבלת 100 מ״ל</span>');
+  if(x.f.includes("carry")) badges.push((x.b==="s"||x.b==="r") ? '<span class="badge warnb">⚠ אסור במזוודה — להחזיר לתיק גב</span>' : '<span class="badge carry">רק בתיק גב</span>');
+  if(x.f.includes("liquid") && (x.b==="s"||x.b==="r")) badges.push('<span class="badge wear">במזוודה אין מגבלת 100 מ״ל</span>');
   if(x.f.includes("liquid")) badges.push('<span class="badge liquid">עד 100 מ״ל</span>');
   if(x.f.includes("wear")) badges.push('<span class="badge wear">ללבוש</span>');
-  if(x.b==="s"||x.b==="b") badges.push(`<button class="badge ph" data-flipbag="${x.id}" aria-label="להעביר ל${x.b==="s"?"תיק גב":"מזוודה"}">⇄ ${BAGS[x.b].name}</button>`);
+  if(QTY_BAGS.includes(x.b)) badges.push(`<button class="badge ph" data-flipbag="${x.id}" aria-label="להעביר ל${BAGS[nextBag(x.b)].name}">⇄ ${BAGS[x.b].name}</button>`);
   badges.push(`<button class="badge ph" data-cycle="${x.id}" aria-label="להעביר שלב, עכשיו: ${PHASES[x.p]}">⇄ ${PHASES[x.p]}</button>`);
   const name = editing === x.id
     ? `<div class="edit-row"><input id="editbox" data-editbox="${x.id}" value="${esc(x.t)}" aria-label="שם הפריט"><button type="button" data-skip="${x.id}">${x.skip?"צריך בכל זאת":"אין צורך"}</button><button type="button" data-remove="${x.id}">מחיקה</button></div><div class="phasepick">${Object.entries(BAGS).map(([k,v])=>`<button type="button" style="--c:${v.c}" data-setbag="${x.id}:${k}" aria-pressed="${x.b===k}">${v.name}</button>`).join("")}</div><div class="phasepick">${Object.entries(PHASES).map(([k,v])=>`<button type="button" data-setphase="${x.id}:${k}" aria-pressed="${x.p===k}">${v}</button>`).join("")}</div>`
@@ -613,7 +615,7 @@ function renderList(){
       const gi = its.filter(x=>x.g===g);
       const all = scope.filter(x=>x.b===k && x.g===g);
       const ph = ui.phase!=="all" ? ui.phase : mostPhase(all);
-      const add = ui.status==="done" ? "" : `<form class="gadd" data-addbag="${k}" data-addgroup="${esc(g)}" data-addphase="${ph}" autocomplete="off"><input class="t" placeholder="+ להוסיף ל${esc(g)}" aria-label="פריט חדש ב${esc(g)}">${k==="s"||k==="b"?'<input class="n" type="number" inputmode="numeric" min="0" value="1" aria-label="כמות">':""}<button>הוספה</button></form>`;
+      const add = ui.status==="done" ? "" : `<form class="gadd" data-addbag="${k}" data-addgroup="${esc(g)}" data-addphase="${ph}" autocomplete="off"><input class="t" placeholder="+ להוסיף ל${esc(g)}" aria-label="פריט חדש ב${esc(g)}">${QTY_BAGS.includes(k)?'<input class="n" type="number" inputmode="numeric" min="0" value="1" aria-label="כמות">':""}<button>הוספה</button></form>`;
       const selAll = ui.del ? ` <button class="selgroup" data-selgroup="${gi.map(x=>x.id).join(",")}">${gi.every(x=>selected.has(x.id))?"לבטל בחירה":"לבחור הכול"}</button>` : "";
       html += `<div class="group"><h3><span>${esc(g)}${selAll}</span><span>${all.filter(x=>x.done).length}/${all.length}</span></h3><div class="items">${gi.map(itemHTML).join("")}${add}</div></div>`;
     }
@@ -674,10 +676,11 @@ function setPlan(id, n){
   if(n === x.auto) delete state.edits[id].q; else state.edits[id].q = n;
   if(!Object.keys(state.edits[id]).length) delete state.edits[id];
 }
+function nextBag(b){ return QTY_BAGS[(QTY_BAGS.indexOf(b)+1) % QTY_BAGS.length]; }
 function setBag(id, bg){
   keep.add(id);
   const cu = state.custom.find(c=>c.id===id);
-  if(cu){ cu.b = bg; if(cu.q==null && (bg==="s"||bg==="b")) cu.q = 1; return; }
+  if(cu){ cu.b = bg; if(cu.q==null && QTY_BAGS.includes(bg)) cu.q = 1; return; }
   const base = BASE.find(b=>b.id===id);
   state.edits[id] = state.edits[id] || {};
   if(base && base.b === bg) delete state.edits[id].b; else state.edits[id].b = bg;
@@ -737,7 +740,7 @@ document.addEventListener("click", e=>{
     selected.clear(); persist(); render(); return;
   }
   if(el = t.closest("[data-setbag]")){ const [id,bg] = el.dataset.setbag.split(":"); setBag(id, bg); editing = null; persist(); render(); return; }
-  if(el = t.closest("[data-flipbag]")){ const x = byId(el.dataset.flipbag); setBag(x.id, x.b==="s"?"b":"s"); persist(); render(); return; }
+  if(el = t.closest("[data-flipbag]")){ const x = byId(el.dataset.flipbag); setBag(x.id, nextBag(x.b)); persist(); render(); return; }
   if(el = t.closest("[data-setphase]")){ const [id,ph] = el.dataset.setphase.split(":"); setPhase(id, ph); editing = null; persist(); render(); return; }
   if(el = t.closest("[data-cycle]")){ const x = byId(el.dataset.cycle); const order = ["now","later","last"]; setPhase(x.id, order[(order.indexOf(x.p)+1)%3]); persist(); render(); return; }
   if(el = t.closest("[data-skip]")){ const id = el.dataset.skip; editing = null; keep.add(id); if(state.skip[id]) delete state.skip[id]; else state.skip[id] = true; persist(); render(); return; }
@@ -772,7 +775,7 @@ $("#addform").addEventListener("submit", e=>{
   e.preventDefault(); const v = $("#addinput").value.trim(); if(!v) return;
   const b = ui.bag==="all" ? "s" : ui.bag, p = ui.phase==="all" ? "now" : ui.phase;
   const n = parseInt($("#addqty").value,10);
-  state.custom.push({id:"c"+Date.now().toString(36), t:v, b, p, q:(b==="s"||b==="b") ? (isNaN(n)?1:Math.max(0,n)) : null});
+  state.custom.push({id:"c"+Date.now().toString(36), t:v, b, p, q:QTY_BAGS.includes(b) ? (isNaN(n)?1:Math.max(0,n)) : null});
   $("#addinput").value = ""; $("#addqty").value = 1; persist(); render();
 });
 document.addEventListener("submit", e=>{
@@ -780,7 +783,7 @@ document.addEventListener("submit", e=>{
   e.preventDefault();
   const v = f.querySelector(".t").value.trim(); if(!v) return;
   const b = f.dataset.addbag, nEl = f.querySelector(".n"), n = nEl ? parseInt(nEl.value,10) : NaN;
-  state.custom.push({id:"c"+Date.now().toString(36), t:v, b, p:f.dataset.addphase, g:f.dataset.addgroup, q:(b==="s"||b==="b") ? (isNaN(n)?1:Math.max(0,n)) : null});
+  state.custom.push({id:"c"+Date.now().toString(36), t:v, b, p:f.dataset.addphase, g:f.dataset.addgroup, q:QTY_BAGS.includes(b) ? (isNaN(n)?1:Math.max(0,n)) : null});
   persist(); render();
   const again = [...document.querySelectorAll(".gadd")].find(x=>x.dataset.addbag===b && x.dataset.addgroup===f.dataset.addgroup);
   if(again) again.querySelector(".t").focus();
@@ -830,7 +833,7 @@ function openDoor(){ door={i:0,res:[]}; setActions(); doorRender(); $("#overlay"
 function closeDoor(){ $("#overlay").classList.remove("on"); render(); }
 $("#doorbtn").onclick = openDoor; $("#ovclose").onclick = closeDoor;
 
-const VERSION = "2.3";
+const VERSION = "2.4";
 document.getElementById("ver").textContent = "גרסה " + VERSION;
 lsLoad(); render();
 </script>
