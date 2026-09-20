@@ -227,7 +227,7 @@ details.alerts[open] summary::after{content:"－"}
   </form>
 
   <div class="foot">
-    <span id="sync">נשמר במכשיר הזה</span>
+    <span><span id="sync">נשמר במכשיר הזה</span> · <span id="ver"></span></span>
     <span>
       <button id="restore" hidden></button>
       <button id="reset">לאפס את מה שנארז</button>
@@ -440,6 +440,7 @@ function autoQty(x, c){ return typeof x.q === "string" ? RULES[x.q](c) : [x.q, "
 let state = {checked:{}, packed:{}, edits:{}, hidden:{}, custom:[], dest:"", dep:"", ret:"", laundry:false};
 let ui = {phase:"all", bag:"all", status:"all", del:false};
 let editing = null;
+let keep = new Set(); // items finished while viewing "נשאר" stay visible (struck) until the view changes
 const LS = "trip-pack-v1";
 const blank = () => ({checked:{}, packed:{}, edits:{}, hidden:{}, custom:[], dest:"", dep:"", ret:"", laundry:false});
 function normalize(s){
@@ -557,7 +558,7 @@ function itemHTML(x){
 
 function renderList(){
   const scope = allItems().filter(x=>(ui.phase==="all"||x.p===ui.phase)&&(ui.bag==="all"||x.b===ui.bag));
-  const items = scope.filter(x=> ui.status==="all" || (ui.status==="done" ? x.done : !x.done));
+  const items = scope.filter(x=> ui.status==="all" || (ui.status==="done" ? x.done : (!x.done || keep.has(x.id))));
   if(!items.length){
     const msg = !scope.length ? "אין כאן פריטים לשלב הזה. אפשר להוסיף אחד למטה."
       : ui.status==="left" ? "הכול כאן כבר נארז." : "עוד לא ארזת כלום מהחלק הזה.";
@@ -568,7 +569,7 @@ function renderList(){
     const its = items.filter(x=>x.b===k); if(!its.length) continue;
     html += `<section class="section" style="--c:${v.c}"><div class="sec-head"><h2>${v.name}</h2><span class="where">${v.where}</span></div>`;
     for(const g of [...new Set(its.map(x=>x.g))]){
-      const gi = its.filter(x=>x.g===g).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+      const gi = its.filter(x=>x.g===g);
       const all = scope.filter(x=>x.b===k && x.g===g);
       const ph = ui.phase!=="all" ? ui.phase : mostPhase(all);
       const add = ui.status==="done" ? "" : `<form class="gadd" data-addbag="${k}" data-addgroup="${esc(g)}" data-addphase="${ph}" autocomplete="off"><input class="t" placeholder="+ להוסיף ל${esc(g)}" aria-label="פריט חדש ב${esc(g)}">${k==="s"||k==="b"?'<input class="n" type="number" inputmode="numeric" min="0" value="1" aria-label="כמות">':""}<button>הוספה</button></form>`;
@@ -581,7 +582,8 @@ function renderList(){
   const eb = $("#editbox"); if(eb){ eb.focus(); eb.select(); }
 }
 function mostPhase(list){ const c={}; list.forEach(x=>c[x.p]=(c[x.p]||0)+1); return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0] || "now"; }
-function render(){ renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי למחוק" : "🗑 מחיקת פריטים"; }
+function remember(){ if(ui.status==="left") document.querySelectorAll("#list .item:not(.done) [data-id]").forEach(b=>keep.add(b.dataset.id)); }
+function render(){ remember(); renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי למחוק" : "🗑 מחיקת פריטים"; }
 
 /* ---------- persistence: device + cloud ---------- */
 let ref = null, saveTimer = null, lastSent = "";
@@ -640,9 +642,9 @@ function removeItem(id){
 document.addEventListener("click", e=>{
   const t = e.target;
   let el;
-  if(el = t.closest("button[data-phase]")){ ui.phase = el.dataset.phase; saveUI(); renderNav(); renderList(); return; }
-  if(el = t.closest("button[data-status]")){ ui.status = el.dataset.status; saveUI(); renderNav(); renderList(); return; }
-  if(el = t.closest("button[data-bag]")){ ui.bag = el.dataset.bag; saveUI(); renderNav(); renderList(); return; }
+  if(el = t.closest("button[data-phase]")){ keep.clear(); ui.phase = el.dataset.phase; saveUI(); renderNav(); renderList(); return; }
+  if(el = t.closest("button[data-status]")){ keep.clear(); ui.status = el.dataset.status; saveUI(); renderNav(); renderList(); return; }
+  if(el = t.closest("button[data-bag]")){ keep.clear(); ui.bag = el.dataset.bag; saveUI(); renderNav(); renderList(); return; }
   if(el = t.closest(".chk")){
     const x = byId(el.dataset.id);
     if(x.hasQty) setPacked(x.id, x.done ? 0 : x.plan);
@@ -740,6 +742,8 @@ function openDoor(){ door={i:0,res:[]}; setActions(); doorRender(); $("#overlay"
 function closeDoor(){ $("#overlay").classList.remove("on"); render(); }
 $("#doorbtn").onclick = openDoor; $("#ovclose").onclick = closeDoor;
 
+const VERSION = "1.6";
+document.getElementById("ver").textContent = "גרסה " + VERSION;
 lsLoad(); render();
 </script>
 </body>
