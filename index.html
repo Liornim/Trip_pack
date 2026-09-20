@@ -131,9 +131,10 @@ details.alerts[open] summary::after{content:"－"}
 .skipbtn{border:1.5px solid var(--line);background:var(--paper);border-radius:8px;padding:3px 8px;font-size:13px;font-weight:700;white-space:nowrap;color:var(--muted)}
 .item.notneeded .name{text-decoration:line-through;font-style:italic;color:var(--muted)}
 .item.notneeded .chk{background:var(--line);border-color:var(--line)}
-.tools{display:flex;justify-content:flex-end;margin:6px 0 0}
+.tools{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:6px 0 0}
 .tools button{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 14px;font-size:14.5px;font-weight:600}
-.tools button[aria-pressed="true"]{background:#E4572E;border-color:#E4572E;color:#fff}
+#hidedone[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+#editmode[aria-pressed="true"]{background:#E4572E;border-color:#E4572E;color:#fff}
 
 /* quantity column */
 .qty{flex:0 0 96px;display:flex;flex-direction:column;align-items:center;gap:2px;border-inline-start:1px dashed var(--line);padding-inline-start:10px;margin-inline-start:2px}
@@ -217,7 +218,7 @@ details.alerts[open] summary::after{content:"－"}
   <nav class="phases" id="phases" aria-label="שלב"></nav>
   <nav class="bags" id="bags" aria-label="איפה זה נארז"></nav>
   <nav class="status" id="status" aria-label="מה נארז"></nav>
-  <div class="tools"><button id="editmode" aria-pressed="false">✎ מחיקה / אין צורך</button></div>
+  <div class="tools"><button id="hidedone" aria-pressed="false"></button><button id="editmode" aria-pressed="false">✎ מחיקה / אין צורך</button></div>
 
   <details class="alerts">
     <summary>5 דברים שכדאי לבדוק לפני שאורזים</summary>
@@ -575,10 +576,10 @@ function itemHTML(x){
 
 function renderList(){
   const scope = allItems().filter(x=>(ui.phase==="all"||x.p===ui.phase||keep.has(x.id))&&(ui.bag==="all"||x.b===ui.bag||keep.has(x.id)));
-  const items = scope.filter(x=> ui.status!=="done" || x.done || keep.has(x.id));
+  const items = scope.filter(x=> ui.status==="done" ? (x.done || keep.has(x.id)) : (!state.hideDone || !x.done || keep.has(x.id)));
   if(!items.length){
     const msg = !scope.length ? "אין כאן פריטים לשלב הזה. אפשר להוסיף אחד למטה."
-      : "עוד לא ארזת כלום מהחלק הזה.";
+      : ui.status==="done" ? "עוד לא ארזת כלום מהחלק הזה." : "סיימת את כל מה שיש כאן. אפשר ללחוץ ״להציג מה שסיימתי״.";
     $("#list").innerHTML = `<div class="empty">${msg}</div>`; return;
   }
   let html = "";
@@ -599,8 +600,12 @@ function renderList(){
   const eb = $("#editbox"); if(eb){ eb.focus(); eb.select(); }
 }
 function mostPhase(list){ const c={}; list.forEach(x=>c[x.p]=(c[x.p]||0)+1); return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0] || "now"; }
-function remember(){ if(ui.status==="done") document.querySelectorAll("#list .item.done [data-id]").forEach(b=>keep.add(b.dataset.id)); }
-function render(){ remember(); renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי" : "✎ מחיקה / אין צורך"; }
+function remember(){
+  if(ui.status==="done") document.querySelectorAll("#list .item.done [data-id]").forEach(b=>keep.add(b.dataset.id));
+  else if(state.hideDone) document.querySelectorAll("#list .item:not(.done) [data-id]").forEach(b=>keep.add(b.dataset.id));
+}
+function render(){ remember(); renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי" : "✎ מחיקה / אין צורך";
+  const hd=$("#hidedone"); hd.setAttribute("aria-pressed", !!state.hideDone); hd.textContent = state.hideDone ? "👁 להציג מה שסיימתי" : "🙈 להחביא מה שסיימתי"; hd.hidden = ui.status==="done"; }
 
 /* ---------- persistence: device + cloud ---------- */
 let ref = null, saveTimer = null, lastSent = "";
@@ -739,6 +744,7 @@ document.addEventListener("submit", e=>{
   const again = [...document.querySelectorAll(".gadd")].find(x=>x.dataset.addbag===b && x.dataset.addgroup===f.dataset.addgroup);
   if(again) again.querySelector(".t").focus();
 });
+$("#hidedone").addEventListener("click", ()=>{ state.hideDone = !state.hideDone; keep.clear(); persist(); render(); });
 $("#editmode").addEventListener("click", ()=>{ ui.del = !ui.del; saveUI(); render(); });
 let armTimer;
 $("#reset").addEventListener("click", e=>{
@@ -783,7 +789,7 @@ function openDoor(){ door={i:0,res:[]}; setActions(); doorRender(); $("#overlay"
 function closeDoor(){ $("#overlay").classList.remove("on"); render(); }
 $("#doorbtn").onclick = openDoor; $("#ovclose").onclick = closeDoor;
 
-const VERSION = "2.1";
+const VERSION = "2.2";
 document.getElementById("ver").textContent = "גרסה " + VERSION;
 lsLoad(); render();
 </script>
