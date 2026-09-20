@@ -131,6 +131,22 @@ details.alerts[open] summary::after{content:"－"}
 .skipbtn{border:1.5px solid var(--line);background:var(--paper);border-radius:8px;padding:3px 8px;font-size:13px;font-weight:700;white-space:nowrap;color:var(--muted)}
 .item.notneeded .name{text-decoration:line-through;font-style:italic;color:var(--muted)}
 .item.notneeded .chk{background:var(--line);border-color:var(--line)}
+.sel{flex:0 0 auto;width:30px;height:30px;border-radius:7px;border:2px solid var(--c);background:var(--paper);color:#fff;font-weight:700;align-self:center;padding:0}
+.sel[aria-pressed="true"]{background:var(--c)}
+.item.picked{background:var(--soft)}
+.selgroup{border:0;background:none;color:var(--c,var(--ink));text-decoration:underline;font-size:13px;padding:0 6px}
+.selbar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--paper);border-top:2px solid var(--ink);box-shadow:0 -6px 20px #0003;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:7px}
+.selbar[hidden]{display:none}
+.selhead{display:flex;align-items:center;gap:10px}
+.selhead b{margin-inline-end:auto}
+.selhead button{border:0;background:none;text-decoration:underline;color:var(--muted);font-size:14px}
+.selrow{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.selrow span{font-size:13px;color:var(--muted);white-space:nowrap}
+.selrow button{flex:0 0 auto;border:1.5px solid var(--line);background:var(--soft);border-radius:8px;padding:6px 11px;font-size:14.5px;font-weight:600}
+.selrow button:disabled{opacity:.4}
+.selrow .danger{border-color:#E4572E;color:#E4572E}
+body.selecting .wrap{padding-bottom:230px}
+body.selecting .doorbtn{display:none}
 .tools{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:6px 0 0}
 .tools button{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 14px;font-size:14.5px;font-weight:600}
 #hidedone[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
@@ -218,7 +234,7 @@ details.alerts[open] summary::after{content:"－"}
   <nav class="phases" id="phases" aria-label="שלב"></nav>
   <nav class="bags" id="bags" aria-label="איפה זה נארז"></nav>
   <nav class="status" id="status" aria-label="מה נארז"></nav>
-  <div class="tools"><button id="hidedone" aria-pressed="false"></button><button id="editmode" aria-pressed="false">✎ מחיקה / אין צורך</button></div>
+  <div class="tools"><button id="hidedone" aria-pressed="false"></button><button id="editmode" aria-pressed="false">✎ בחירה: העברה / מחיקה / אין צורך</button></div>
 
   <details class="alerts">
     <summary>5 דברים שכדאי לבדוק לפני שאורזים</summary>
@@ -247,6 +263,12 @@ details.alerts[open] summary::after{content:"－"}
 </div>
 
 <button class="doorbtn" id="doorbtn">🚪 בדיקת דלת</button>
+<div class="selbar" id="selbar" hidden>
+  <div class="selhead"><b id="selcount"></b><button data-bulk="clear">ניקוי בחירה</button><button data-bulk="exit">סיימתי</button></div>
+  <div class="selrow"><span>להעביר ל:</span><button data-bulk="p:now">עכשיו</button><button data-bulk="p:later">אחר כך</button><button data-bulk="p:last">רגע לפני</button></div>
+  <div class="selrow"><span>לתיק:</span><button data-bulk="b:s">מזוודה</button><button data-bulk="b:b">תיק גב</button><button data-bulk="b:d">מסמכים</button><button data-bulk="b:t">משימות</button></div>
+  <div class="selrow"><button data-bulk="skip">אין צורך</button><button data-bulk="unskip">צריך בכל זאת</button><button class="danger" data-bulk="del">מחיקה</button></div>
+</div>
 
 <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="בדיקת דלת">
   <div class="ov-top"><span id="ovcount"></span><button id="ovclose">סגירה</button></div>
@@ -451,6 +473,7 @@ function autoQty(x, c){ return typeof x.q === "string" ? RULES[x.q](c) : [x.q, "
 let state = {checked:{}, packed:{}, edits:{}, hidden:{}, skip:{}, custom:[], dest:"", dep:"", ret:"", laundry:false};
 let ui = {phase:"all", bag:"all", status:"left", del:false};
 let editing = null;
+const selected = new Set();
 let keep = new Set(); // items finished while viewing "נשאר" stay visible (struck) until the view changes
 const LS = "trip-pack-v1";
 const blank = () => ({checked:{}, packed:{}, edits:{}, hidden:{}, skip:{}, custom:[], dest:"", dep:"", ret:"", laundry:false});
@@ -564,9 +587,9 @@ function itemHTML(x){
     </div>`;
   }
   const tools = ui.del && editing!==x.id
-    ? `<div class="rowtools"><button class="skipbtn" data-skip="${x.id}">${x.skip?"להחזיר":"אין צורך"}</button><button class="del" data-remove="${x.id}" aria-label="למחוק את ${esc(x.t)}">×</button></div>`
+    ? `<button class="sel" data-sel="${x.id}" aria-pressed="${selected.has(x.id)}" aria-label="לבחור את ${esc(x.t)}">${selected.has(x.id)?"✓":""}</button>`
     : (x.id.startsWith("c") && editing!==x.id ? `<button class="del" data-remove="${x.id}" aria-label="למחוק את ${esc(x.t)}">×</button>` : "");
-  return `<div class="item${x.done?" done":""}${(x.hasQty&&x.plan===0)||x.skip?" skip":""}${x.skip?" notneeded":""}">
+  return `<div class="item${ui.del&&selected.has(x.id)?" picked":""}${x.done?" done":""}${(x.hasQty&&x.plan===0)||x.skip?" skip":""}${x.skip?" notneeded":""}">
     <button class="chk" data-id="${x.id}" role="checkbox" aria-checked="${x.done}" aria-label="${esc(x.t)}">${CHECK}</button>
     <div class="txt">${name}${x.n?`<div class="note">${esc(x.n)}</div>`:""}${calc}<div class="badges">${badges.join("")}</div></div>
     ${qty}
@@ -591,7 +614,8 @@ function renderList(){
       const all = scope.filter(x=>x.b===k && x.g===g);
       const ph = ui.phase!=="all" ? ui.phase : mostPhase(all);
       const add = ui.status==="done" ? "" : `<form class="gadd" data-addbag="${k}" data-addgroup="${esc(g)}" data-addphase="${ph}" autocomplete="off"><input class="t" placeholder="+ להוסיף ל${esc(g)}" aria-label="פריט חדש ב${esc(g)}">${k==="s"||k==="b"?'<input class="n" type="number" inputmode="numeric" min="0" value="1" aria-label="כמות">':""}<button>הוספה</button></form>`;
-      html += `<div class="group"><h3><span>${esc(g)}</span><span>${all.filter(x=>x.done).length}/${all.length}</span></h3><div class="items">${gi.map(itemHTML).join("")}${add}</div></div>`;
+      const selAll = ui.del ? ` <button class="selgroup" data-selgroup="${gi.map(x=>x.id).join(",")}">${gi.every(x=>selected.has(x.id))?"לבטל בחירה":"לבחור הכול"}</button>` : "";
+      html += `<div class="group"><h3><span>${esc(g)}${selAll}</span><span>${all.filter(x=>x.done).length}/${all.length}</span></h3><div class="items">${gi.map(itemHTML).join("")}${add}</div></div>`;
     }
     html += `</section>`;
   }
@@ -604,7 +628,11 @@ function remember(){
   if(ui.status==="done") document.querySelectorAll("#list .item.done [data-id]").forEach(b=>keep.add(b.dataset.id));
   else if(state.hideDone) document.querySelectorAll("#list .item:not(.done) [data-id]").forEach(b=>keep.add(b.dataset.id));
 }
-function render(){ remember(); renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי" : "✎ מחיקה / אין צורך";
+function render(){ remember(); renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי" : "✎ בחירה: העברה / מחיקה / אין צורך";
+  document.body.classList.toggle("selecting", !!ui.del);
+  const sb=$("#selbar"); sb.hidden = !ui.del;
+  $("#selcount").textContent = selected.size ? `נבחרו ${selected.size}` : "לסמן פריטים בריבועים";
+  sb.querySelectorAll(".selrow button").forEach(b=>b.disabled = !selected.size);
   const hd=$("#hidedone"); hd.setAttribute("aria-pressed", !!state.hideDone); hd.textContent = state.hideDone ? "👁 להציג מה שסיימתי" : "🙈 להחביא מה שסיימתי"; hd.hidden = ui.status==="done"; }
 
 /* ---------- persistence: device + cloud ---------- */
@@ -695,6 +723,19 @@ document.addEventListener("click", e=>{
   if(el = t.closest("[data-inc]")){ const x = byId(el.dataset.inc); setPacked(x.id, x.packed+1); persist(); render(); return; }
   if(el = t.closest("[data-dec]")){ const x = byId(el.dataset.dec); setPacked(x.id, x.packed-1); persist(); render(); return; }
   if(el = t.closest("[data-auto]")){ const id = el.dataset.auto; if(state.edits[id]){ delete state.edits[id].q; if(!Object.keys(state.edits[id]).length) delete state.edits[id]; } persist(); render(); return; }
+  if(el = t.closest("[data-sel]")){ const id = el.dataset.sel; selected.has(id) ? selected.delete(id) : selected.add(id); render(); return; }
+  if(el = t.closest("[data-selgroup]")){ const ids = el.dataset.selgroup.split(","); const all = ids.every(i=>selected.has(i)); ids.forEach(i=> all ? selected.delete(i) : selected.add(i)); render(); return; }
+  if(el = t.closest("[data-bulk]")){
+    const a = el.dataset.bulk, ids = [...selected];
+    if(a==="exit"){ ui.del = false; selected.clear(); saveUI(); render(); return; }
+    if(a==="clear"){ selected.clear(); render(); return; }
+    if(a.startsWith("p:")) ids.forEach(id=>setPhase(id, a.slice(2)));
+    else if(a.startsWith("b:")) ids.forEach(id=>setBag(id, a.slice(2)));
+    else if(a==="skip") ids.forEach(id=>{ state.skip[id] = true; keep.add(id); });
+    else if(a==="unskip") ids.forEach(id=>{ delete state.skip[id]; keep.add(id); });
+    else if(a==="del") ids.forEach(id=>removeItem(id));
+    selected.clear(); persist(); render(); return;
+  }
   if(el = t.closest("[data-setbag]")){ const [id,bg] = el.dataset.setbag.split(":"); setBag(id, bg); editing = null; persist(); render(); return; }
   if(el = t.closest("[data-flipbag]")){ const x = byId(el.dataset.flipbag); setBag(x.id, x.b==="s"?"b":"s"); persist(); render(); return; }
   if(el = t.closest("[data-setphase]")){ const [id,ph] = el.dataset.setphase.split(":"); setPhase(id, ph); editing = null; persist(); render(); return; }
@@ -745,7 +786,7 @@ document.addEventListener("submit", e=>{
   if(again) again.querySelector(".t").focus();
 });
 $("#hidedone").addEventListener("click", ()=>{ state.hideDone = !state.hideDone; keep.clear(); persist(); render(); });
-$("#editmode").addEventListener("click", ()=>{ ui.del = !ui.del; saveUI(); render(); });
+$("#editmode").addEventListener("click", ()=>{ ui.del = !ui.del; selected.clear(); editing = null; saveUI(); render(); });
 let armTimer;
 $("#reset").addEventListener("click", e=>{
   const b = e.currentTarget;
@@ -789,7 +830,7 @@ function openDoor(){ door={i:0,res:[]}; setActions(); doorRender(); $("#overlay"
 function closeDoor(){ $("#overlay").classList.remove("on"); render(); }
 $("#doorbtn").onclick = openDoor; $("#ovclose").onclick = closeDoor;
 
-const VERSION = "2.2";
+const VERSION = "2.3";
 document.getElementById("ver").textContent = "גרסה " + VERSION;
 lsLoad(); render();
 </script>
