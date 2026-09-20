@@ -35,6 +35,7 @@ button{cursor:pointer}
 
 /* departure board */
 .board{background:var(--board);color:var(--sign);padding:18px 18px 16px;border-radius:0 0 22px 22px;margin:0 -14px}
+.ver{font-size:12.5px;color:#C9C2A2;text-align:left;direction:ltr;margin-bottom:2px}
 .route{font-family:"Karantina","Assistant",sans-serif;font-weight:700;font-size:60px;line-height:1;display:flex;align-items:center;gap:12px;direction:ltr}
 .route .plane{font-size:36px;flex:0 0 auto}
 .route .from{flex:0 0 auto}
@@ -134,7 +135,7 @@ details.alerts[open] summary::after{content:"－"}
 .packed{width:40px;text-align:center;font-family:"Karantina",sans-serif;font-weight:700;font-size:28px;line-height:1;border:0;border-bottom:1.5px dashed var(--line);background:transparent;color:var(--ink);padding:0;-moz-appearance:textfield}
 .packed::-webkit-outer-spin-button,.packed::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .packed:focus{outline:none;border-bottom-color:var(--c)}
-.status{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:6px 0 4px;border:1.5px solid var(--ink);border-radius:10px;overflow:hidden}
+.status{display:grid;grid-template-columns:repeat(2,1fr);gap:0;margin:6px 0 4px;border:1.5px solid var(--ink);border-radius:10px;overflow:hidden}
 .status button{border:0;background:var(--paper);padding:8px 4px;font-weight:700;font-size:15px;border-inline-start:1.5px solid var(--ink)}
 .status button:first-child{border-inline-start:0}
 .status button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -189,6 +190,7 @@ details.alerts[open] summary::after{content:"－"}
 <body>
 <div class="wrap">
   <header class="board">
+    <div class="ver" id="ver"></div>
     <div class="route"><span class="from">TLV</span><span class="plane" aria-hidden="true">✈</span><input class="dest" id="dest" placeholder="לאן?" aria-label="יעד" maxlength="24"></div>
     <div class="dates">
       <label>יציאה<input type="date" id="dep"></label>
@@ -227,7 +229,7 @@ details.alerts[open] summary::after{content:"－"}
   </form>
 
   <div class="foot">
-    <span><span id="sync">נשמר במכשיר הזה</span> · <span id="ver"></span></span>
+    <span id="sync">נשמר במכשיר הזה</span>
     <span>
       <button id="restore" hidden></button>
       <button id="reset">לאפס את מה שנארז</button>
@@ -438,7 +440,7 @@ function autoQty(x, c){ return typeof x.q === "string" ? RULES[x.q](c) : [x.q, "
 
 /* ---------- state ---------- */
 let state = {checked:{}, packed:{}, edits:{}, hidden:{}, custom:[], dest:"", dep:"", ret:"", laundry:false};
-let ui = {phase:"all", bag:"all", status:"all", del:false};
+let ui = {phase:"all", bag:"all", status:"left", del:false};
 let editing = null;
 let keep = new Set(); // items finished while viewing "נשאר" stay visible (struck) until the view changes
 const LS = "trip-pack-v1";
@@ -452,7 +454,7 @@ function normalize(s){
 }
 function lsLoad(){ try{ const r = localStorage.getItem(LS); if(r) state = normalize(JSON.parse(r)); }catch(e){} }
 function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
-try{ const u = JSON.parse(sessionStorage.getItem(LS+"-ui")||"null"); if(u) ui = Object.assign(ui,u); }catch(e){}
+try{ const u = JSON.parse(sessionStorage.getItem(LS+"-ui")||"null"); if(u) ui = Object.assign(ui,u); if(ui.status!=="done") ui.status="left"; }catch(e){}
 function saveUI(){ try{ sessionStorage.setItem(LS+"-ui", JSON.stringify(ui)); }catch(e){} }
 
 function view(x, c){
@@ -514,7 +516,7 @@ function renderNav(){
     }).join("");
   const scope = items.filter(x=>(ui.phase==="all"||x.p===ui.phase)&&(ui.bag==="all"||x.b===ui.bag));
   const nl = scope.filter(x=>!x.done).length, nd = scope.length - nl;
-  $("#status").innerHTML = [["left",`נשאר · ${nl}`],["done",`נארז · ${nd}`],["all","הכול"]]
+  $("#status").innerHTML = [["left",`הרשימה · נשאר ${nl}`],["done",`נארז · ${nd}`]]
     .map(([k,l])=>`<button data-status="${k}" aria-pressed="${ui.status===k}">${l}</button>`).join("");
   const nh = Object.keys(state.hidden).length, r = $("#restore");
   r.hidden = !nh; r.textContent = `להחזיר ${nh} פריטים שהוסרו`;
@@ -558,10 +560,10 @@ function itemHTML(x){
 
 function renderList(){
   const scope = allItems().filter(x=>(ui.phase==="all"||x.p===ui.phase)&&(ui.bag==="all"||x.b===ui.bag));
-  const items = scope.filter(x=> ui.status==="all" || (ui.status==="done" ? x.done : (!x.done || keep.has(x.id))));
+  const items = scope.filter(x=> ui.status!=="done" || x.done || keep.has(x.id));
   if(!items.length){
     const msg = !scope.length ? "אין כאן פריטים לשלב הזה. אפשר להוסיף אחד למטה."
-      : ui.status==="left" ? "הכול כאן כבר נארז." : "עוד לא ארזת כלום מהחלק הזה.";
+      : "עוד לא ארזת כלום מהחלק הזה.";
     $("#list").innerHTML = `<div class="empty">${msg}</div>`; return;
   }
   let html = "";
@@ -582,7 +584,7 @@ function renderList(){
   const eb = $("#editbox"); if(eb){ eb.focus(); eb.select(); }
 }
 function mostPhase(list){ const c={}; list.forEach(x=>c[x.p]=(c[x.p]||0)+1); return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0] || "now"; }
-function remember(){ if(ui.status==="left") document.querySelectorAll("#list .item:not(.done) [data-id]").forEach(b=>keep.add(b.dataset.id)); }
+function remember(){ if(ui.status==="done") document.querySelectorAll("#list .item.done [data-id]").forEach(b=>keep.add(b.dataset.id)); }
 function render(){ remember(); renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי למחוק" : "🗑 מחיקת פריטים"; }
 
 /* ---------- persistence: device + cloud ---------- */
@@ -742,7 +744,7 @@ function openDoor(){ door={i:0,res:[]}; setActions(); doorRender(); $("#overlay"
 function closeDoor(){ $("#overlay").classList.remove("on"); render(); }
 $("#doorbtn").onclick = openDoor; $("#ovclose").onclick = closeDoor;
 
-const VERSION = "1.6";
+const VERSION = "1.7";
 document.getElementById("ver").textContent = "גרסה " + VERSION;
 lsLoad(); render();
 </script>
