@@ -121,6 +121,10 @@ details.alerts[open] summary::after{content:"－"}
 .badge.wear{color:var(--c-t)}
 .badge.ph{color:var(--muted);border-color:var(--line)}
 .del{border:0;background:none;color:var(--muted);font-size:20px;padding:0 4px;line-height:1}
+.editing .del{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:#E4572E;color:#fff;font-size:18px;display:grid;place-items:center;align-self:center}
+.tools{display:flex;justify-content:flex-end;margin:6px 0 0}
+.tools button{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 14px;font-size:14.5px;font-weight:600}
+.tools button[aria-pressed="true"]{background:#E4572E;border-color:#E4572E;color:#fff}
 
 /* quantity column */
 .qty{flex:0 0 96px;display:flex;flex-direction:column;align-items:center;gap:2px;border-inline-start:1px dashed var(--line);padding-inline-start:10px;margin-inline-start:2px}
@@ -200,6 +204,7 @@ details.alerts[open] summary::after{content:"－"}
   <nav class="phases" id="phases" aria-label="שלב"></nav>
   <nav class="bags" id="bags" aria-label="איפה זה נארז"></nav>
   <nav class="status" id="status" aria-label="מה נארז"></nav>
+  <div class="tools"><button id="editmode" aria-pressed="false">🗑 מחיקת פריטים</button></div>
 
   <details class="alerts">
     <summary>5 דברים שכדאי לבדוק לפני שאורזים</summary>
@@ -430,7 +435,7 @@ function autoQty(x, c){ return typeof x.q === "string" ? RULES[x.q](c) : [x.q, "
 
 /* ---------- state ---------- */
 let state = {checked:{}, packed:{}, edits:{}, hidden:{}, custom:[], dest:"", dep:"", ret:"", laundry:false};
-let ui = {phase:"all", bag:"all", status:"all"};
+let ui = {phase:"all", bag:"all", status:"all", del:false};
 let editing = null;
 const LS = "trip-pack-v1";
 const blank = () => ({checked:{}, packed:{}, edits:{}, hidden:{}, custom:[], dest:"", dep:"", ret:"", laundry:false});
@@ -535,7 +540,7 @@ function itemHTML(x){
     <button class="chk" data-id="${x.id}" role="checkbox" aria-checked="${x.done}" aria-label="${esc(x.t)}">${CHECK}</button>
     <div class="txt">${name}${x.n?`<div class="note">${esc(x.n)}</div>`:""}${calc}<div class="badges">${badges.join("")}</div></div>
     ${qty}
-    ${x.id.startsWith("c") && editing!==x.id ? `<button class="del" data-remove="${x.id}" aria-label="למחוק">×</button>` : ""}
+    ${(ui.del || x.id.startsWith("c")) && editing!==x.id ? `<button class="del" data-remove="${x.id}" aria-label="למחוק את ${esc(x.t)}">×</button>` : ""}
   </div>`;
 }
 
@@ -561,10 +566,11 @@ function renderList(){
     html += `</section>`;
   }
   $("#list").innerHTML = html;
+  $("#list").classList.toggle("editing", !!ui.del);
   const eb = $("#editbox"); if(eb){ eb.focus(); eb.select(); }
 }
 function mostPhase(list){ const c={}; list.forEach(x=>c[x.p]=(c[x.p]||0)+1); return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0] || "now"; }
-function render(){ renderBoard(); renderNav(); renderList(); }
+function render(){ renderBoard(); renderNav(); renderList(); const em=$("#editmode"); em.setAttribute("aria-pressed", !!ui.del); em.textContent = ui.del ? "סיימתי למחוק" : "🗑 מחיקת פריטים"; }
 
 /* ---------- persistence: device + cloud ---------- */
 let ref = null, saveTimer = null, lastSent = "";
@@ -679,6 +685,7 @@ document.addEventListener("submit", e=>{
   const again = [...document.querySelectorAll(".gadd")].find(x=>x.dataset.addbag===b && x.dataset.addgroup===f.dataset.addgroup);
   if(again) again.querySelector(".t").focus();
 });
+$("#editmode").addEventListener("click", ()=>{ ui.del = !ui.del; saveUI(); render(); });
 let armTimer;
 $("#reset").addEventListener("click", e=>{
   const b = e.currentTarget;
