@@ -152,6 +152,9 @@ details.alerts[open] summary::after{content:"－"}
 .of input.manual{border-color:var(--c);border-width:1.5px}
 .of input::-webkit-outer-spin-button,.of input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .item.skip .name{color:var(--muted)}
+.left{font-size:13px;font-weight:700;color:var(--c);white-space:nowrap}
+.left.ok{color:var(--muted);font-weight:600}
+.left.over{color:var(--over)}
 .empty{padding:28px 12px;text-align:center;color:var(--muted)}
 
 .add{display:flex;gap:8px;margin-top:22px}
@@ -516,6 +519,13 @@ function renderNav(){
   r.hidden = !nh; r.textContent = `להחזיר ${nh} פריטים שהוסרו`;
 }
 
+function leftHTML(x){
+  if(x.plan === 0) return `<div class="left ok">לא לוקחים</div>`;
+  const d = x.plan - x.packed;
+  if(d > 0) return `<div class="left">נשאר ${d}</div>`;
+  if(d < 0) return `<div class="left over">${-d} מעבר</div>`;
+  return `<div class="left ok">✓ הכול</div>`;
+}
 function itemHTML(x){
   const badges = [];
   if(x.f.includes("carry")) badges.push('<span class="badge carry">רק בתיק גב</span>');
@@ -534,6 +544,7 @@ function itemHTML(x){
     qty = `<div class="qty">
       <div class="step"><button data-dec="${x.id}" aria-label="להוריד אחד">−</button><input class="packed ${cls}" type="number" inputmode="numeric" min="0" max="99" data-packed="${x.id}" value="${x.packed}" aria-label="כמה נארז"><button data-inc="${x.id}" aria-label="להוסיף אחד">+</button></div>
       <div class="of">מתוך <input type="number" inputmode="numeric" min="0" max="99" data-plan="${x.id}" value="${x.plan}" class="${x.manual?"manual":""}" aria-label="כמה צריך">${x.u?esc(x.u):""}</div>
+      ${leftHTML(x)}
     </div>`;
   }
   return `<div class="item${x.done?" done":""}${x.hasQty&&x.plan===0?" skip":""}">
