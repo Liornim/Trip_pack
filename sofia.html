@@ -354,12 +354,6 @@ const BASE = [
  I("b13","כבל USB-C ל־USB-C","b","now","טעינה וכבלים","","",1),
  I("b14","כבל USB ל־USB-C","b","now","טעינה וכבלים","","",1),
  I("b15","כבל משולש","b","now","טעינה וכבלים","","חוסך לקחת שלושה",1),
- I("b20","מצלמה + עדשה","b","now","מצלמה","","",1),
- I("b21","מטען למצלמה","b","now","מצלמה","","",1),
- I("b22","סוללות רזרביות","b","now","מצלמה","carry","",1),
- I("b30","משקפי ראייה / עדשות","b","last","לטיסה","","",1),
- I("b31","מים לעדשות","b","last","לטיסה","liquid","",1),
- I("b32","משקפי שמש","b","last","לטיסה","","שלג ושמש נמוכה מסנוורים",1),
  I("b33","ספר / מדריך","b","now","לטיסה","","",1),
  I("b34","טישו ומגבונים","b","last","לטיסה","","",1),
  I("b35","כרית צוואר","b","last","לטיסה","","טיסה קצרה, כ־2.5 שעות. כנראה מיותר",1),
@@ -809,7 +803,7 @@ function openDoor(){ door={i:0,res:[]}; setActions(); doorRender(); $("#overlay"
 function closeDoor(){ $("#overlay").classList.remove("on"); render(); }
 $("#doorbtn").onclick = openDoor; $("#ovclose").onclick = closeDoor;
 
-const VERSION = "S1.0";
+const VERSION = "S1.1";
 document.getElementById("ver").textContent = "גרסה " + VERSION;
 lsLoad(); render();
 </script>
