@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>רשימות אריזה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E7ECF1; --paper:#FFFFFF; --ink:#16202E; --muted:#5B6778; --line:#CFD7E0; --soft:#F1F4F7;
+  --board:#131C28; --sign:#F5C400;
+  --c-s:#2E5E8C; --c-b:#C2410C; --c-r:#0F7C7C; --c-d:#6B4FA0; --c-t:#3F7D4E;
+  --warn:#B45309; --over:#D97706; --danger:#E4572E;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E141C; --paper:#17202C; --ink:#E6ECF2; --muted:#98A5B4; --line:#2A3746; --soft:#1E2936;
+    --board:#080C12; --c-s:#6FA3D6; --c-b:#F08A5D; --c-r:#5CC6C0; --c-d:#A98BE0; --c-t:#78B98A;
+    --warn:#F2A541; --over:#F2A541;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E141C; --paper:#17202C; --ink:#E6ECF2; --muted:#98A5B4; --line:#2A3746; --soft:#1E2936;
+  --board:#080C12; --c-s:#6FA3D6; --c-b:#F08A5D; --c-r:#5CC6C0; --c-d:#A98BE0; --c-t:#78B98A;
+  --warn:#F2A541; --over:#F2A541;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Assistant",system-ui,"Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--sign);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 120px}
+h2,h3{margin:0}
+
+/* ---------- board ---------- */
+.board{background:var(--board);color:var(--sign);padding:16px 18px;border-radius:0 0 22px 22px;margin:0 -14px}
+.btop{display:flex;align-items:center;gap:10px;font-size:13px;color:#C9C2A2;margin-bottom:6px}
+.btop button{background:none;border:1px solid #F5C40055;color:var(--sign);border-radius:999px;padding:3px 12px;font-size:13.5px}
+.btop .ver{margin-inline-start:auto;direction:ltr}
+.route{font-family:"Karantina","Assistant",sans-serif;font-weight:700;font-size:56px;line-height:1;display:flex;align-items:center;gap:12px;direction:ltr}
+.route .plane{font-size:34px;flex:0 0 auto}
+.route .from{flex:0 0 auto}
+.dest{flex:1;min-width:0;background:transparent;border:0;border-bottom:2px dashed #F5C40055;color:var(--sign);font-family:inherit;font-weight:700;font-size:inherit;line-height:1;padding:0 0 2px;text-align:right}
+.dest::placeholder{color:#F5C40066}
+.dest:focus{outline:none;border-bottom-color:var(--sign)}
+.dates{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.dates label{display:flex;flex-direction:column;font-size:13px;color:#C9C2A2;border:1px solid #F5C40040;border-radius:10px;padding:5px 10px}
+.dates input{background:transparent;border:0;color:var(--sign);color-scheme:dark;font-size:16px;font-weight:700;padding:0;width:100%}
+.tripline{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.flaps{display:flex;gap:4px;direction:ltr}
+.flap{background:#222C3A;color:var(--sign);font-family:"Karantina",sans-serif;font-weight:700;font-size:36px;line-height:1;width:30px;height:44px;display:grid;place-items:center;border-radius:5px;position:relative}
+.flap::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#0006}
+.countlabel{font-size:16px;color:#E9E2C0}
+.len{font-size:14.5px;color:#E9E2C0;margin-inline-start:auto}
+.err{color:#FF8A6B;font-size:14px;width:100%}
+.laundry{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14.5px;color:#E9E2C0;background:none;border:1px solid #F5C40040;border-radius:999px;padding:5px 12px 5px 6px}
+.laundry .sw{width:34px;height:20px;border-radius:10px;background:#2A3442;position:relative;transition:.2s}
+.laundry .sw::after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#8C95A3;transition:.2s}
+.laundry[aria-pressed="true"] .sw{background:var(--sign)}
+.laundry[aria-pressed="true"] .sw::after{inset-inline-start:16px;background:#16202E}
+.meters{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}
+.meter{font-size:13.5px;color:#D6D0B4}
+.meter b{display:block;font-family:"Karantina",sans-serif;font-size:26px;line-height:1;color:var(--sign);font-weight:700}
+.meter .bar{height:4px;background:#2A3442;border-radius:2px;margin-top:5px;overflow:hidden}
+.meter .bar i{display:block;height:100%;background:var(--sign);width:0;transition:width .3s}
+
+/* ---------- trips screen ---------- */
+.page-head{margin:22px 0 10px}
+.page-head h2{font-family:"Karantina",sans-serif;font-size:44px;line-height:1}
+.page-head p{margin:2px 0 0;color:var(--muted);font-size:15px}
+.tripcard{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;gap:12px;align-items:center}
+.tripcard.active{border-color:var(--ink);border-width:2px}
+.tripcard .meta{flex:1;min-width:0}
+.tripcard .nm{font-weight:700;font-size:18px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tripcard .sub{font-size:14px;color:var(--muted);margin-top:1px}
+.pill{font-size:12px;border:1px solid var(--line);color:var(--muted);border-radius:5px;padding:0 6px;font-weight:600}
+.pill.now{border-color:var(--c-t);color:var(--c-t)}
+.ring{flex:0 0 auto;width:52px;height:52px;display:grid;place-items:center;font-weight:700;font-size:14px;border-radius:50%;background:conic-gradient(var(--c-t) var(--deg),var(--line) 0)}
+.ring span{width:42px;height:42px;border-radius:50%;background:var(--paper);display:grid;place-items:center}
+.tripacts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tripacts button{border:1.5px solid var(--line);background:var(--soft);border-radius:8px;padding:4px 10px;font-size:13.5px;font-weight:600}
+.tripacts .danger{border-color:var(--danger);color:var(--danger)}
+.bigbtn{display:block;width:100%;margin-top:14px;border:2px dashed var(--line);background:none;color:var(--ink);border-radius:14px;padding:14px;font-size:17px;font-weight:700}
+.empty{padding:28px 12px;text-align:center;color:var(--muted)}
+
+/* ---------- wizard ---------- */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+.fld{margin-top:12px}
+.fld:first-child{margin-top:0}
+.fld > label{display:block;font-size:14px;color:var(--muted);font-weight:600;margin-bottom:5px}
+.fld input[type=text],.fld input[type=date]{width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chips button{border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;font-size:15px;font-weight:600}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.hint{font-size:13.5px;color:var(--muted);margin-top:6px}
+.go{display:flex;gap:8px;margin-top:16px}
+.go button{flex:1;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:10px;padding:11px;font-weight:700}
+.go button.ghost{background:none;color:var(--ink)}
+
+/* ---------- list nav ---------- */
+.phases{display:grid;grid-template-columns:repeat(4,1fr);margin:16px 0 10px;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phases button{border:0;background:none;padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:1px;border-inline-start:1px solid var(--line)}
+.phases button:first-child{border-inline-start:0}
+.phases .ph-name{font-weight:700;font-size:16px}
+.phases .ph-sub{font-size:12.5px;color:var(--muted)}
+.phases button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.phases button[aria-pressed="true"] .ph-sub{color:inherit;opacity:.75}
+.bags{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.bags::-webkit-scrollbar{display:none}
+.bags button{flex:0 0 auto;border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:15px;display:flex;align-items:center;gap:7px}
+.bags button .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.bags button[aria-pressed="true"]{border-color:var(--c,var(--ink));background:var(--c,var(--ink));color:#fff}
+.bags button[aria-pressed="true"] .dot{background:#fff}
+.status{display:grid;grid-template-columns:repeat(2,1fr);margin:6px 0 4px;border:1.5px solid var(--ink);border-radius:10px;overflow:hidden}
+.status button{border:0;background:var(--paper);padding:8px 4px;font-weight:700;font-size:15px;border-inline-start:1.5px solid var(--ink)}
+.status button:first-child{border-inline-start:0}
+.status button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.search{position:relative;margin:8px 0 0}
+.search input{width:100%;border:1.5px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 12px;padding-inline-end:38px;font-size:16px}
+.search input:focus{border-color:var(--ink);outline:none}
+.search input::-webkit-search-cancel-button{display:none}
+.search button{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);border:0;background:var(--soft);border-radius:50%;width:26px;height:26px;font-size:18px;line-height:1;padding:0;color:var(--muted)}
+.searchnote{font-size:14px;color:var(--muted);margin-top:14px}
+mark{background:#F5C40066;color:inherit;border-radius:2px}
+.tools{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+.tools button{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 14px;font-size:14.5px;font-weight:600}
+#hidedone[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+#editmode[aria-pressed="true"]{background:var(--danger);border-color:var(--danger);color:#fff}
+
+/* ---------- alerts ---------- */
+details.alerts{background:var(--paper);border:1px solid var(--line);border-inline-start:5px solid var(--warn);border-radius:12px;margin:12px 0 4px;padding:0 14px}
+details.alerts summary{padding:12px 0;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.alerts summary::-webkit-details-marker{display:none}
+details.alerts summary::after{content:"＋";color:var(--muted)}
+details.alerts[open] summary::after{content:"－"}
+.alert{padding:10px 0;border-top:1px solid var(--line);font-size:15.5px}
+.alert h4{margin:0 0 3px;font-size:16px}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:4px;padding:0 6px;margin-inline-start:6px;vertical-align:2px}
+.tag.fact{background:#3F7D4E22;color:var(--c-t)}
+.tag.check{background:#B4530922;color:var(--warn)}
+
+/* ---------- list ---------- */
+.section{margin-top:22px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid var(--c);padding-bottom:4px;margin-bottom:4px}
+.sec-head h2{font-family:"Karantina",sans-serif;font-size:36px;line-height:1;color:var(--c)}
+.sec-head .where{font-size:14px;color:var(--muted)}
+.group{margin-top:12px}
+.group h3{font-size:15px;color:var(--muted);margin:0 0 4px;font-weight:600;display:flex;justify-content:space-between}
+.items{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-top:1px solid var(--line);position:relative}
+.item:first-child{border-top:0}
+.item::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px;background:var(--c)}
+.chk{flex:0 0 auto;width:28px;height:28px;border-radius:50%;border:2px solid var(--c);background:transparent;display:grid;place-items:center;padding:0;margin-top:1px}
+.chk svg{width:16px;height:16px;opacity:0;transform:scale(.4);transition:.18s}
+.item.done .chk{background:var(--c)}
+.item.done .chk svg{opacity:1;transform:none}
+.item .txt{flex:1;min-width:0}
+.name{display:block;width:100%;text-align:start;background:none;border:0;padding:3px 0;font-weight:600;border-radius:4px}
+.name:hover{background:var(--soft)}
+.item.done .name{text-decoration:line-through;color:var(--muted);font-weight:400}
+.item.notneeded .name{text-decoration:line-through;font-style:italic;color:var(--muted)}
+.item.notneeded .chk{background:var(--line);border-color:var(--line)}
+.item.picked{background:var(--soft)}
+.edit-row{display:flex;gap:6px;align-items:center}
+.edit-row input{flex:1;min-width:0;border:1.5px solid var(--c);background:var(--soft);border-radius:8px;padding:5px 8px;font-weight:600}
+.edit-row button{border:0;background:none;color:var(--muted);font-size:14px;padding:4px 2px;white-space:nowrap}
+.item .note{font-size:14px;color:var(--muted);margin-top:1px}
+.calc{font-size:13px;color:var(--muted);margin-top:2px}
+.calc button{border:0;background:none;padding:0;color:var(--c);text-decoration:underline;font-size:13px}
+.badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
+.badge{font-size:12.5px;border-radius:5px;padding:0 6px;border:1px solid currentColor}
+.badge.carry{color:var(--c-b)}
+.badge.liquid{color:var(--c-s)}
+.badge.wear{color:var(--c-t)}
+.badge.ph{color:var(--muted);border-color:var(--line);background:var(--paper);cursor:pointer;font:inherit;font-size:12.5px;line-height:1.5}
+.badge.warnb{color:#fff;background:var(--danger);border-color:var(--danger);font-weight:700}
+.phasepick{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.phasepick button{flex:1;border:1.5px solid var(--line);background:var(--paper);border-radius:8px;padding:4px 6px;font-size:14px;font-weight:600}
+.phasepick button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#fff}
+.del{border:0;background:none;color:var(--muted);font-size:20px;padding:0 4px;line-height:1}
+.sel{flex:0 0 auto;width:30px;height:30px;border-radius:7px;border:2px solid var(--c);background:var(--paper);color:#fff;font-weight:700;align-self:center;padding:0}
+.sel[aria-pressed="true"]{background:var(--c)}
+.selgroup{border:0;background:none;color:var(--c,var(--ink));text-decoration:underline;font-size:13px;padding:0 6px}
+.qty{flex:0 0 96px;display:flex;flex-direction:column;align-items:center;gap:2px;border-inline-start:1px dashed var(--line);padding-inline-start:10px;margin-inline-start:2px}
+.step{display:flex;align-items:center;gap:2px;direction:ltr}
+.step button{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--soft);font-size:18px;line-height:1;padding:0;display:grid;place-items:center}
+.packed{width:40px;text-align:center;font-family:"Karantina",sans-serif;font-weight:700;font-size:28px;line-height:1;border:0;border-bottom:1.5px dashed var(--line);background:transparent;color:var(--ink);padding:0;-moz-appearance:textfield}
+.packed::-webkit-outer-spin-button,.packed::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.packed:focus{outline:none;border-bottom-color:var(--c)}
+.packed.full{color:var(--c)}
+.packed.over{color:var(--over)}
+.of{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:3px;white-space:nowrap}
+.of input{width:34px;border:1px solid var(--line);background:var(--paper);border-radius:5px;text-align:center;padding:0 2px;font-weight:700;color:var(--ink);font-size:14px;-moz-appearance:textfield}
+.of input.manual{border-color:var(--c);border-width:1.5px}
+.of input::-webkit-outer-spin-button,.of input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.left{font-size:13px;font-weight:700;color:var(--c);white-space:nowrap}
+.left.ok{color:var(--muted);font-weight:600}
+.left.over{color:var(--over)}
+.gadd{display:flex;gap:6px;padding:8px 10px 8px 12px;border-top:1px dashed var(--line);background:var(--soft);align-items:center}
+.gadd input{border:1px solid transparent;background:transparent;padding:5px 6px;border-radius:7px;min-width:0}
+.gadd input:focus{border-color:var(--c);background:var(--paper);outline:none}
+.gadd input.t{flex:1}
+.gadd input.t::placeholder{color:var(--c);font-weight:600}
+.gadd input.n{width:48px;text-align:center;border-color:var(--line);background:var(--paper)}
+.gadd button{border:0;background:var(--c);color:#fff;border-radius:7px;padding:5px 12px;font-weight:700;font-size:14px}
+
+/* ---------- settings ---------- */
+details.settings{margin-top:26px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:0 14px}
+details.settings summary{padding:12px 0;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.settings summary::-webkit-details-marker{display:none}
+details.settings summary::after{content:"＋";color:var(--muted)}
+details.settings[open] summary::after{content:"－"}
+.srow{padding:10px 0;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.srow .lbl{flex:1;min-width:140px}
+.srow .lbl b{display:block;font-size:15.5px}
+.srow .lbl span{font-size:13.5px;color:var(--muted)}
+.srow button{border:1.5px solid var(--line);background:var(--soft);border-radius:9px;padding:7px 14px;font-weight:600;font-size:14.5px}
+.srow button.danger{border-color:var(--danger);color:var(--danger)}
+.srow button.armed{background:var(--danger);border-color:var(--danger);color:#fff}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-size:14px;color:var(--muted);gap:10px;flex-wrap:wrap}
+
+/* ---------- bars / overlays ---------- */
+.doorbtn{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));inset-inline-start:50%;transform:translateX(50%);background:var(--sign);color:#16202E;border:0;border-radius:999px;padding:13px 26px;font-weight:700;font-size:17px;box-shadow:0 6px 20px #0004;white-space:nowrap;z-index:4}
+.selbar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--paper);border-top:2px solid var(--ink);box-shadow:0 -6px 20px #0003;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:7px}
+.selbar[hidden]{display:none}
+.selhead{display:flex;align-items:center;gap:10px}
+.selhead b{margin-inline-end:auto}
+.selhead button{border:0;background:none;text-decoration:underline;color:var(--muted);font-size:14px}
+.selrow{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.selrow span{font-size:13px;color:var(--muted);white-space:nowrap}
+.selrow button{flex:0 0 auto;border:1.5px solid var(--line);background:var(--soft);border-radius:8px;padding:6px 11px;font-size:14.5px;font-weight:600}
+.selrow button:disabled{opacity:.4}
+.selrow .danger{border-color:var(--danger);color:var(--danger)}
+body.selecting .wrap{padding-bottom:230px}
+body.selecting .doorbtn{display:none}
+.overlay{position:fixed;inset:0;background:var(--board);color:#fff;z-index:10;display:none;flex-direction:column;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(24px + env(safe-area-inset-bottom,0px))}
+.overlay.on{display:flex}
+.ov-top{display:flex;justify-content:space-between;align-items:center;color:#D6D0B4;font-size:15px}
+.ov-top button{background:none;border:1px solid #fff4;color:#fff;border-radius:999px;padding:5px 14px}
+.ov-card{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px}
+.ov-q{font-family:"Karantina",sans-serif;font-weight:700;font-size:clamp(52px,14vw,92px);line-height:.95;color:var(--sign)}
+.ov-hint{color:#C9CFD8;font-size:17px;max-width:30ch}
+.ov-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ov-actions button{border:0;border-radius:14px;padding:18px;font-size:19px;font-weight:700}
+.yes{background:var(--sign);color:#16202E}
+.no{background:#2A3442;color:#fff}
+.ov-steps{display:flex;gap:4px;margin:10px 0 14px}
+.ov-steps i{flex:1;height:4px;border-radius:2px;background:#2A3442}
+.ov-steps i.y{background:var(--sign)} .ov-steps i.n{background:var(--danger)}
+.missing{list-style:none;padding:0;margin:8px 0 0;font-size:20px;color:#fff}
+.sheet{position:fixed;inset:0;background:#0009;z-index:9;display:none;align-items:flex-end}
+.sheet.on{display:flex}
+.sheet .inner{background:var(--paper);width:100%;max-height:86vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));max-width:720px;margin:0 auto}
+.sheet h3{font-size:20px;margin-bottom:6px}
+.sheet p{color:var(--muted);font-size:14.5px;margin:0 0 10px}
+.sheet textarea{width:100%;height:160px;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;direction:ltr;text-align:left}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (min-width:600px){.route{font-size:72px}.qty{flex-basis:110px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="board" id="board" hidden>
+    <div class="btop">
+      <button id="backtrips">☰ הנסיעות שלי</button>
+      <span id="tripname"></span>
+      <span class="ver" id="ver"></span>
+    </div>
+    <div class="route"><span class="from">TLV</span><span class="plane" aria-hidden="true">✈</span><input class="dest" id="dest" placeholder="לאן?" aria-label="יעד" maxlength="24"></div>
+    <div class="dates">
+      <label>יציאה<input type="date" id="dep"></label>
+      <label>חזרה<input type="date" id="ret"></label>
+    </div>
+    <div class="tripline">
+      <div class="flaps" id="flaps" aria-hidden="true"></div>
+      <span class="countlabel" id="countlabel"></span>
+      <span class="len" id="len"></span>
+      <span class="err" id="err" hidden></span>
+    </div>
+    <button class="laundry" id="laundry" aria-pressed="false"><span class="sw"></span>יש כביסה בדרך (אורזים ל־7 ימים מקסימום)</button>
+    <div class="meters" id="meters"></div>
+  </header>
+
+  <main id="screen"></main>
+</div>
+
+<button class="doorbtn" id="doorbtn" hidden>🚪 בדיקת דלת</button>
+
+<div class="selbar" id="selbar" hidden>
+  <div class="selhead"><b id="selcount"></b><button data-bulk="clear">ניקוי בחירה</button><button data-bulk="exit">סיימתי</button></div>
+  <div class="selrow"><span>להעביר ל:</span><button data-bulk="p:now">עכשיו</button><button data-bulk="p:later">אחר כך</button><button data-bulk="p:last">רגע לפני</button></div>
+  <div class="selrow"><span>לתיק:</span><button data-bulk="b:s">מזוודה</button><button data-bulk="b:b">תיק גב</button><button data-bulk="b:r">תיק רחצה</button><button data-bulk="b:d">מסמכים</button><button data-bulk="b:t">משימות</button></div>
+  <div class="selrow"><button data-bulk="skip">אין צורך</button><button data-bulk="unskip">צריך בכל זאת</button><button class="danger" data-bulk="del">מחיקה</button></div>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="בדיקת דלת">
+  <div class="ov-top"><span id="ovcount"></span><button id="ovclose">סגירה</button></div>
+  <div class="ov-steps" id="ovsteps"></div>
+  <div class="ov-card" id="ovcard"></div>
+  <div class="ov-actions" id="ovactions"></div>
+</div>
+
+<div class="sheet" id="sheet"><div class="inner" id="sheetinner"></div></div>
+
+<script>
+/* ===================== catalog ===================== */
+const VERSION = "3.0";
+const BAGS = {
+  s:{name:"מזוודה", where:"נכנסת לבטן המטוס", c:"var(--c-s)"},
+  b:{name:"תיק גב", where:"עולה איתך למטוס", c:"var(--c-b)"},
+  r:{name:"תיק רחצה", where:"נכנס למזוודה", c:"var(--c-r)"},
+  d:{name:"מסמכים וכסף", where:"בתיק הגב, בתא אחד", c:"var(--c-d)"},
+  t:{name:"משימות", where:"לסגור לפני שטסים", c:"var(--c-t)"}
+};
+const QTY_BAGS = ["s","b","r"];
+const PHASES = {now:"עכשיו", later:"אחר כך", last:"רגע לפני"};
+const PACK_NAMES = {
+  core:"בסיס", usa:"ארה״ב", eu:"אירופה", other:"יעד אחר",
+  cold:"קר", mild:"ממוזג", hot:"חם",
+  car:"רכב", work:"עבודה", gym:"כושר", smoke:"עישון", camera:"מצלמה", eyes:"משקפיים", spa:"ספא/בריכה"
+};
+const REGIONS = ["usa","eu","other"], CLIMATES = ["cold","mild","hot"], EXTRAS = ["car","work","gym","smoke","camera","eyes","spa"];
+const DEFAULT_DAYS = 5, LAUNDRY_CAP = 7;
+
+/* id, text, bag, phase, group, qty, packs, note, flags, unit */
+const I = (id,t,b,p,g,q,packs,n,f,u) => ({id,t,b,p,g,q:(q===undefined?null:q),packs:packs||["core"],n:n||"",f:f||"",u:u||""});
+const CATALOG = [
+ /* ---- מזוודה: בגדים ---- */
+ I("c_und","תחתונים","s","now","בגדים","w1",["core"]),
+ I("c_sock","גרביים","s","now","בגדים","w1",["core"],"","","זוגות"),
+ I("c_tee","חולצות טי","s","now","בגדים","w",["core"]),
+ I("c_shirt","חולצות מכופתרות / נאות","s","now","בגדים","w5",["core"]),
+ I("c_pants","מכנסיים ארוכים","s","now","בגדים","j",["core"]),
+ I("c_pj","פיג׳מה","s","now","בגדים",1,["core"]),
+ I("c_shoe2","נעליים נוספות","s","now","בגדים",1,["core"],"","","זוג"),
+ I("c_flip","כפכפים","s","now","בגדים",1,["core"],"לחדר ולמקלחת"),
+ I("w_therm","חולצה תרמית","s","now","בגדים",2,["cold"],"השכבה שעושה את ההבדל בקור"),
+ I("w_tsock","גרביים תרמיים","s","now","בגדים",2,["cold"],"","","זוגות"),
+ I("w_long","חולצות ארוכות","s","now","בגדים","w3",["cold","mild"]),
+ I("w_sweat","סוודרים / פליז","s","now","בגדים","w2",["cold"]),
+ I("w_hood","הודי / קפוצ׳ון","s","now","בגדים",1,["cold","mild"]),
+ I("h_short","מכנסיים קצרים","s","now","בגדים","w3",["hot"]),
+ I("h_tank","גופיות","s","now","בגדים","w3",["hot"]),
+ /* ---- מזוודה: מעילים ונעליים ---- */
+ I("w_coat","מעיל חורף","s","now","מעילים ונעליים",1,["cold"],"ללבוש בטיסה, לא לארוז","wear"),
+ I("m_jacket","ג׳קט קל","s","now","מעילים ונעליים",1,["mild"],"","wear"),
+ I("w_scarf","צעיף","s","now","מעילים ונעליים",1,["cold"]),
+ I("w_hat","כובע צמר","s","now","מעילים ונעליים",1,["cold"]),
+ I("w_glove","כפפות","s","now","מעילים ונעליים",1,["cold"],"","","זוג"),
+ I("w_grip","נעליים סגורות עם אחיזה","s","now","מעילים ונעליים",1,["cold"],"בגשם ובשלג מדרכות חלקות. סוליה חלקה זו טעות","wear","זוג"),
+ I("c_umb","מטריה","s","now","מעילים ונעליים",1,["cold","mild"]),
+ I("h_cap","כובע / קסקט","s","now","מעילים ונעליים",1,["hot"]),
+ /* ---- מזוודה: ספא וכושר ---- */
+ I("x_swim","בגד ים","s","now","ספא וכושר",1,["hot","spa"]),
+ I("x_flip2","כפכפים לבריכה","s","now","ספא וכושר",1,["spa"]),
+ I("g_cloth","בגדי אימון","s","now","ספא וכושר",1,["gym"]),
+ I("g_prot","חלבון","s","now","ספא וכושר","d",["gym"],"באריזה סגורה היטב","","מנות"),
+ I("g_shake","שייקר","s","now","ספא וכושר",1,["gym"]),
+ I("g_scale","משקל","s","now","ספא וכושר",1,["gym"]),
+ /* ---- מזוודה: ציוד ---- */
+ I("c_bags","שקיות ריקות","s","now","ציוד כללי",3,["core"],"לכביסה מלוכלכת ולנעליים רטובות"),
+ I("c_adapt_eu","מתאם לחשמל אירופאי","s","now","ציוד כללי",2,["eu"],"באירופה שקע C/F ו־230V"),
+ I("c_adapt_us","מתאם לחשמל אמריקאי","s","now","ציוד כללי",2,["usa"],"בארה״ב שקע A/B ו־120V. רוב המטענים תומכים 100–240V — להציץ על המדבקה"),
+ I("c_adapt_any","מתאם חשמל אוניברסלי","s","now","ציוד כללי",1,["other"],"לבדוק איזה שקע יש ביעד"),
+ I("c_split","מפצל / שקע נוסף","s","now","ציוד כללי",1,["core"],"חוסך מתאמים בחדר"),
+ I("c_wcharge","מטען לשעון","s","last","ציוד כללי",1,["core"]),
+ I("c_pcharge2","מטען פלאפון שני","s","last","ציוד כללי",1,["core"]),
+ I("k_mouse","עכבר למחשב","s","later","ציוד כללי",1,["work"]),
+ I("k_hdmi","כבל HDMI","s","later","ציוד כללי",1,["work"]),
+ I("k_lap2","לפטופ שני","s","last","ציוד כללי",1,["work"]),
+ I("k_lap2c","מטען ללפטופ השני","s","last","ציוד כללי",1,["work"]),
+ /* ---- תיק רחצה ---- */
+ I("c_tbrush","מברשת שיניים","r","last","רחצה וטיפוח",1,["core"]),
+ I("c_tpaste","משחת שיניים","r","last","רחצה וטיפוח",1,["core"]),
+ I("c_deo","דאודרנט","r","last","רחצה וטיפוח",1,["core"]),
+ I("c_shave","מכונת גילוח","r","last","רחצה וטיפוח",1,["core"]),
+ I("c_cream","קרם לחות / שפתון","r","now","רחצה וטיפוח",1,["core"]),
+ I("c_perf","בושם","r","now","רחצה וטיפוח",1,["core"]),
+ I("c_scis","מספריים / קוצץ","r","now","רחצה וטיפוח",1,["core"]),
+ I("c_vas","וזלין","r","now","רחצה וטיפוח",1,["core"]),
+ I("h_sun","קרם הגנה (בקבוק גדול)","r","now","רחצה וטיפוח",1,["hot","spa"]),
+ I("h_aloe","אלוורה","r","now","רחצה וטיפוח",1,["hot"]),
+ I("c_med","תרופות קבועות","r","now","עזרה ראשונה",1,["core"],"אם יש — עדיף בתיק הגב, באריזה המקורית","door"),
+ I("c_acam","אקמול / אדוויל","r","now","עזרה ראשונה",1,["core"]),
+ I("c_cold","כדורים נגד צינון","r","now","עזרה ראשונה",1,["core"]),
+ I("c_opt","אופטלגין","r","now","עזרה ראשונה",1,["core"]),
+ I("c_stom","כדורי בטן","r","now","עזרה ראשונה",1,["core"]),
+ I("c_plast","פלסטרים","r","now","עזרה ראשונה",1,["core"],"להליכה ארוכה בנעליים חדשות"),
+ I("c_disin","חומר חיטוי","r","now","עזרה ראשונה",1,["core"]),
+ I("c_elast","תחבושת אלסטית","r","now","עזרה ראשונה",1,["core"]),
+ /* ---- תיק גב ---- */
+ I("c_lap","לפטופ","b","last","מחשבים",1,["core"],"","door"),
+ I("c_lapc","מטען ללפטופ","b","last","מחשבים",1,["core"]),
+ I("c_phone","פלאפון","b","last","מחשבים",1,["core"],"","door"),
+ I("c_head","אוזניות","b","last","מחשבים",1,["core"]),
+ I("c_pad","אייפד","b","last","מחשבים",1,["work"]),
+ I("c_pbank","מטען נייד","b","last","טעינה וכבלים",1,["core"],"סוללת ליתיום — אסור במזוודה","carry door"),
+ I("c_pbankc","מטען למטען הנייד","b","later","טעינה וכבלים",1,["core"]),
+ I("c_pcharge","מטען פלאפון + כבל","b","last","טעינה וכבלים",1,["core"]),
+ I("c_usbc","ראש USB-C","b","now","טעינה וכבלים",1,["core"]),
+ I("c_cc","כבל USB-C ל־USB-C","b","now","טעינה וכבלים",1,["core"]),
+ I("c_ac","כבל USB ל־USB-C","b","now","טעינה וכבלים",1,["core"]),
+ I("c_tri","כבל משולש","b","now","טעינה וכבלים",1,["core"],"חוסך לקחת שלושה"),
+ I("p_cam","מצלמה + עדשות","b","now","מצלמה",1,["camera"]),
+ I("p_camc","מטען למצלמה","b","now","מצלמה",1,["camera"]),
+ I("p_batt","סוללות רזרביות","b","now","מצלמה",1,["camera"],"ליתיום — רק בתיק גב","carry"),
+ I("p_card","כרטיס זיכרון / סטיק","b","now","מצלמה",1,["camera"]),
+ I("e_glass","משקפי ראייה / עדשות מגע","b","last","לטיסה",1,["eyes"]),
+ I("e_sol","מים לעדשות","b","last","לטיסה",1,["eyes"],"","liquid"),
+ I("c_sung","משקפי שמש","b","last","לטיסה",1,["core"]),
+ I("c_book","ספר / מדריך","b","now","לטיסה",1,["core"]),
+ I("c_tiss","טישו ומגבונים","b","last","לטיסה",1,["core"]),
+ I("c_bottle","בקבוק מים ריק","b","last","לטיסה",1,["core"],"למלא אחרי הבידוק במקום לקנות"),
+ I("c_pillow","כרית צוואר","b","last","לטיסה",1,["core"],"בטיסה קצרה כנראה מיותר"),
+ I("c_pen","כלי כתיבה","b","now","לטיסה",1,["core"],"טופס מכס לפעמים עדיין על נייר"),
+ I("c_undf","תחתונים להחלפה","b","last","לטיסה",1,["core"],"אם המזוודה הולכת לאיבוד"),
+ I("c_sunsm","קרם הגנה קטן","b","last","לטיסה",1,["hot"],"","liquid"),
+ I("c_deosm","דאודרנט קטן","b","last","לטיסה",1,["core"],"","liquid"),
+ I("sm_cig","סיגריות","b","last","עישון",2,["smoke"],"","","קופסאות"),
+ I("sm_iqos","IQOS + מטען","b","last","עישון",1,["smoke"],"","carry"),
+ I("sm_light","מצית","b","last","עישון",1,["smoke"],"בדרך כלל מותר אחד, עליך או בתיק גב","carry"),
+ /* ---- מסמכים וכסף ---- */
+ I("c_pass","דרכון","d","later","זהות",null,["core"],"בתוקף לכל השהייה","door"),
+ I("c_id","תעודת זהות / רישיון נהיגה","d","later","זהות",null,["core"],"","door"),
+ I("v_intl","רישיון נהיגה בינלאומי","d","later","זהות",null,["car"],"עובד רק יחד עם הרישיון הישראלי","door"),
+ I("c_wallet","ארנק","d","last","כסף",null,["core"],"","door"),
+ I("c_cc2","כרטיס אשראי בינלאומי","d","later","כסף",null,["core"],"לבדוק שאין חסימה לחו״ל ומה עמלת ההמרה","door"),
+ I("c_cash","מזומן","d","later","כסף",null,["core"]),
+ I("c_matmid","כרטיס נוסע מתמיד","d","later","כסף",null,["core"]),
+ I("c_tick","כרטיסי טיסה","d","later","טיסה ושהייה",null,["core"]),
+ I("c_hotel","אישור מלון / דירה","d","later","טיסה ושהייה",null,["core"]),
+ I("u_esta","ESTA מאושר","d","later","טיסה ושהייה",null,["usa"],"במקום ויזה. רק באתר הרשמי esta.cbp.dhs.gov"),
+ I("o_visa","ויזה / אישור כניסה","d","later","טיסה ושהייה",null,["other"],"לבדוק מה נדרש לאזרח ישראלי ביעד הזה"),
+ I("v_rent","אישור השכרת רכב","d","later","טיסה ושהייה",null,["car"]),
+ I("c_ins","פוליסת ביטוח נסיעות","d","later","ביטוחים",null,["core"]),
+ I("c_inscard","כרטיס ביטוח / מספר חירום","d","later","ביטוחים",null,["core"]),
+ I("v_carins","ביטוח רכב","d","later","ביטוחים",null,["car"]),
+ /* ---- משימות ---- */
+ I("t_pass","לבדוק תוקף דרכון","t","now","לפני הנסיעה",null,["core"],"הרבה מדינות דורשות 3–6 חודשים אחרי החזרה"),
+ I("t_ins","לסגור ביטוח נסיעות","t","now","לפני הנסיעה",null,["core"]),
+ I("t_esim","לסדר חבילת גלישה / eSIM","t","later","לפני הנסיעה",null,["core"]),
+ I("t_cc","להודיע לחברת האשראי","t","later","לפני הנסיעה",null,["core"]),
+ I("t_cash","להוציא מזומן / להמיר","t","later","לפני הנסיעה",null,["core"]),
+ I("t_esta","להגיש / לבדוק ESTA","t","now","לפני הנסיעה",null,["usa"],"רק באתר הרשמי esta.cbp.dhs.gov"),
+ I("t_visa","לבדוק דרישות ויזה ליעד","t","now","לפני הנסיעה",null,["other"]),
+ I("t_age","לבדוק גיל מינימום בהשכרת הרכב","t","now","לפני הנסיעה",null,["car"],"בארה״ב רוב החברות 20–21+, ועד 25 תוספת נהג צעיר"),
+ I("t_intl","להוציא רישיון בינלאומי","t","now","לפני הנסיעה",null,["car"]),
+ I("t_map","להוריד מפה אופליין","t","later","לפני הנסיעה",null,["core"]),
+ I("t_movie","להוריד סרטים וסדרות","t","later","לפני הנסיעה",null,["core"]),
+ I("t_book","להזמין מקומות למסעדות","t","later","לפני הנסיעה",null,["core"]),
+ I("t_hair","להסתפר","t","later","לפני הנסיעה",null,["core"]),
+ I("t_super","לעשות סופר","t","later","לפני הנסיעה",null,["core"]),
+ I("t_weather","לבדוק תחזית יומיים לפני","t","last","לפני הנסיעה",null,["cold"],"אם צפוי שלג — נעליים אטומות במקום סניקרס"),
+ I("t_photo","לצלם את כל המסמכים","t","later","גיבוי",null,["core"]),
+ I("t_mail1","לשלוח למייל: דרכון","t","later","גיבוי",null,["core"]),
+ I("t_mail2","לשלוח למייל: כרטיסי טיסה ומלון","t","later","גיבוי",null,["core"]),
+ I("t_mail3","לשלוח למייל: ביטוח","t","later","גיבוי",null,["core"]),
+ I("t_checkin","צ׳ק־אין אונליין","t","last","ערב לפני",null,["core"],"נפתח בדרך כלל 24 שעות לפני"),
+ I("t_charge","להטעין מחשב, פלאפון, מטען נייד ושעון","t","last","ערב לפני",null,["core"]),
+ I("t_weigh","לשקול את המזוודה","t","last","ערב לפני",null,["core"],"לבדוק את המגבלה בכרטיס — בלואו־קוסט היא נמוכה"),
+ I("t_ac","לכבות מזגן, דוד ואורות","t","last","יציאה מהבית",null,["core"],"","door"),
+ I("t_lock","לנעול חלונות ודלת","t","last","יציאה מהבית",null,["core"],"","door"),
+ I("t_trash","לזרוק זבל ולרוקן את המקרר","t","last","יציאה מהבית",null,["core"]),
+ I("t_keys","מפתחות הבית","t","last","יציאה מהבית",null,["core"],"","door")
+];
+const DOOR_ORDER = ["c_pass","c_wallet","c_cc2","c_id","v_intl","c_phone","c_lap","c_pbank","c_med","t_keys","t_ac","t_lock"];
+const DOOR_HINT = {c_pass:"לפתוח את התא ולהסתכל עליו.",c_pbank:"בתיק הגב, לא במזוודה.",c_med:"אם אין תרופות קבועות — יש.",c_phone:"טעון?",c_cc2:"זה שעובד בחו״ל."};
+
+const ALERTS = {
+  usa:[["ויזה → ESTA","fact","ישראלים נכנסים לארה״ב בפטור מוויזה (מאז אוקטובר 2023), אבל צריך ESTA מאושר לפני הטיסה. להגיש רק באתר הרשמי esta.cbp.dhs.gov — מתווכים גובים יותר על אותו טופס."],
+       ["חשמל 120V ושקע A/B","fact","המתאם האירופאי לא מתאים. רוב מטעני הלפטופ והפלאפון תומכים 100–240V, אבל שווה להציץ על המדבקה."],
+       ["סיגריות","fact","גיל הקנייה בארה״ב הוא 21. מותר להכניס עד 200 סיגריות (קרטון אחד) בלי מכס."]],
+  eu:[["ויזה: בדרך כלל לא צריך","fact","לשהייה קצרה בשנגן ישראלים נכנסים בלי ויזה. שים לב ל־ETIAS: מערכת האישור המקוון של האיחוד אמורה להיכנס לתוקף, אז כדאי לבדוק אם היא כבר חובה בתאריך שלך."],
+      ["חשמל 230V ושקע C/F","fact","השקע הישראלי לא נכנס לרוב השקעים באירופה, אז עדיין צריך מתאם."],
+      ["מטבע","check","לא בכל מדינה באיחוד יש אירו. לבדוק מה המטבע ביעד, ולהעדיף כספומט של בנק על דוכני Change במרכז העיר."]],
+  other:[["ויזה ודרכון","check","לבדוק מה נדרש לאזרח ישראלי ביעד הזה: ויזה, אישור מקוון, ותוקף דרכון של 3–6 חודשים אחרי החזרה."],
+         ["חשמל וחיסונים","check","לבדוק איזה שקע ומתח יש ביעד, ואם נדרשים חיסונים או כדורי מלריה."]],
+  cold:[["קור","check","לארוז בשכבות: תרמי, סוודר, מעיל. השכבה הפנימית חשובה יותר ממעיל עבה אחד. בשלג ובגשם — נעליים עם אחיזה."]],
+  hot:[["חום ושמש","check","קרם הגנה, כובע ובקבוק מים. הקרם הגדול למזוודה, קטן בתיק הגב."]],
+  base:[["נוזלים בתיק הגב","fact","עד 100 מ״ל לבקבוק, הכול בשקית שקופה אחת. בקבוקים גדולים — למזוודה."],
+        ["סוללות ומציתים","fact","מטען נייד, סוללות רזרביות ו־IQOS אסורים במזוודה. מצית: בדרך כלל אחד בלבד, עליך או בתיק הגב."]]
+};
+
+/* ===================== rules ===================== */
+const RULES = {
+  w:  c => [c.w, `${c.w} ימים`],
+  w1: c => [c.w + 1, `${c.w} ימים + 1 רזרבה`],
+  w2: c => [Math.max(2, Math.ceil(c.w/2)), "בקור לובשים שכבה יומיים — אחת לכל יומיים"],
+  w3: c => [Math.max(1, Math.ceil(c.w/3)), "אחת לכל 3 ימים"],
+  w5: c => [Math.max(1, Math.ceil(c.w/5)), "אחת לכל 5 ימים"],
+  j:  c => [Math.max(2, Math.ceil(c.w/3)), "אחד לכל 3 ימים, לפחות 2"],
+  d:  c => [c.days, "אחד לכל יום"]
+};
+
+/* ===================== state ===================== */
+const LS = "packlist-v3";
+const uid = () => Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4);
+const newTrip = (o) => Object.assign({
+  id: uid(), name:"", dest:"", dep:"", ret:"", packs:["core"], laundry:false, hideDone:false,
+  checked:{}, packed:{}, edits:{}, hidden:{}, skip:{}, custom:[], created: Date.now()
+}, o||{});
+let state = {v:3, current:"", trips:[]};
+let ui = {screen:"trips", phase:"all", bag:"all", status:"left", del:false};
+let editing = null, query = "", wiz = null;
+const selected = new Set();
+let keep = new Set();
+
+function scrollTop(){ try{ window.scrollTo(0,0); }catch(e){} }
+const norm = s => String(s||"").toLowerCase().replace(/[׳'"״\-־]/g,"").replace(/\s+/g," ").trim();
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+
+function normalize(raw){
+  const o = Object.assign({v:3, current:"", trips:[]}, raw||{});
+  if(!Array.isArray(o.trips)) o.trips = [];
+  o.trips = o.trips.map(t => newTrip(t));
+  o.trips.forEach(t => { t.custom = (t.custom||[]).map(c => ({q: QTY_BAGS.includes(c.b)?1:null, ...c})); });
+  if(!o.trips.find(t=>t.id===o.current)) o.current = o.trips[0] ? o.trips[0].id : "";
+  return o;
+}
+function lsLoad(){ try{ const r = localStorage.getItem(LS); if(r) state = normalize(JSON.parse(r)); }catch(e){} }
+function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+try{ const u = JSON.parse(sessionStorage.getItem(LS+"-ui")||"null"); if(u) ui = Object.assign(ui,u); }catch(e){}
+function saveUI(){ try{ sessionStorage.setItem(LS+"-ui", JSON.stringify(ui)); }catch(e){} }
+
+const trip = () => state.trips.find(t=>t.id===state.current) || null;
+
+/* ===================== trip math ===================== */
+function span(t){
+  const r = {days:DEFAULT_DAYS, known:false, bad:false};
+  if(t && t.dep && t.ret){
+    const n = Math.round((new Date(t.ret+"T00:00:00") - new Date(t.dep+"T00:00:00"))/86400000);
+    if(n < 0) r.bad = true; else { r.days = n + 1; r.nights = n; r.known = true; }
+  }
+  r.capped = !!(t && t.laundry) && r.days > LAUNDRY_CAP;
+  r.w = r.capped ? LAUNDRY_CAP : r.days;
+  return r;
+}
+function autoQty(x, c){ return typeof x.q === "string" ? RULES[x.q](c) : [x.q, ""]; }
+function baseFor(t){
+  const packs = new Set(t.packs || ["core"]);
+  return CATALOG.filter(x => x.packs.some(p => packs.has(p)));
+}
+function view(x, t, c){
+  const e = t.edits[x.id] || {};
+  const hasQty = x.q !== null && x.q !== undefined;
+  let plan = null, why = "", auto = null, manual = false;
+  if(hasQty){
+    [auto, why] = autoQty(x, c);
+    if(e.q !== undefined && e.q !== null){ plan = e.q; manual = e.q !== auto; } else plan = auto;
+  }
+  const packed = hasQty ? (t.packed[x.id] ?? (t.checked[x.id] ? plan : 0)) : null;
+  const skip = !!t.skip[x.id];
+  const done = skip || (hasQty ? (plan === 0 || packed >= plan) : !!t.checked[x.id]);
+  return {...x, t: e.t || x.t, p: e.p || x.p, b: e.b || x.b, hasQty, plan, auto, why, manual, packed, done, skip, rule: typeof x.q === "string"};
+}
+function allItems(t){
+  t = t || trip(); if(!t) return [];
+  const c = span(t);
+  const custom = t.custom.map(k => I(k.id, k.t, k.b, k.p, k.g || "פריטים שהוספת", k.q, ["core"]));
+  return baseFor(t).concat(custom).filter(x => !t.hidden[x.id]).map(x => view(x, t, c));
+}
+const byId = id => allItems().find(x => x.id === id);
+function progress(t){
+  const its = allItems(t);
+  return {done: its.filter(x=>x.done).length, total: its.length};
+}
+function tripTitle(t){ return t.name || t.dest || "נסיעה"; }
+function fmtDate(d){ if(!d) return ""; const [y,m,dd] = d.split("-"); return `${+dd}.${+m}`; }
+
+/* ===================== persistence ===================== */
+let ref = null, saveTimer = null, lastSent = "";
+function persist(){
+  lsSave();
+  if(!ref) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    const body = JSON.parse(JSON.stringify(state)); lastSent = JSON.stringify(body);
+    try{ await ref.set(body); setSync("מסונכרן בין מכשירים"); }
+    catch(e){ if(e && e.code==="unavailable") setTimeout(persist, 1500+Math.random()*1000); else setSync("נשמר במכשיר הזה"); }
+  }, 700);
+}
+let syncLabel = "נשמר במכשיר הזה";
+function setSync(t){ syncLabel = t; const e = $("#sync"); if(e) e.textContent = t; }
+(async ()=>{
+  try{
+    if(!window.claude || !window.claude.use) return;
+    const db = await window.claude.use("db"); if(!db) return;
+    ref = db.doc("packlist/state");
+    const snap = await ref.get();
+    if(snap.exists){ state = normalize(JSON.parse(JSON.stringify(snap.data()))); lsSave(); if(!editing) render(); }
+    else await ref.set(JSON.parse(JSON.stringify(state)));
+    setSync("מסונכרן בין מכשירים");
+    ref.onSnapshot(s=>{
+      if(!s.exists || s.metadata.hasPendingWrites) return;
+      const d = JSON.stringify(s.data()); if(d===lastSent || d===JSON.stringify(state)) return;
+      state = normalize(JSON.parse(d)); lsSave();
+      if(!editing && !(document.activeElement && document.activeElement.matches("input,textarea"))) render();
+    }, ()=>{});
+  }catch(e){ ref = null; }
+})();
+
+/* ===================== render: board ===================== */
+function renderBoard(){
+  const t = trip(), show = ui.screen === "list" && t;
+  $("#board").hidden = !show;
+  $("#doorbtn").hidden = !show || ui.del;
+  if(!show){ document.title = "אריזה"; return; }
+  const c = span(t);
+  $("#tripname").textContent = tripTitle(t);
+  $("#ver").textContent = "גרסה " + VERSION;
+  if(document.activeElement !== $("#dest")) $("#dest").value = t.dest || "";
+  $("#dep").value = t.dep || ""; $("#ret").value = t.ret || "";
+  $("#laundry").setAttribute("aria-pressed", !!t.laundry);
+  document.title = tripTitle(t) + " — אריזה";
+  const flaps = $("#flaps"), label = $("#countlabel");
+  if(t.dep){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const days = Math.round((new Date(t.dep+"T00:00:00") - today)/86400000);
+    flaps.innerHTML = [...String(Math.max(days,0)).padStart(2,"0")].map(ch=>`<span class="flap">${ch}</span>`).join("");
+    label.textContent = days>1 ? "ימים לטיסה" : days===1 ? "מחר טסים" : days===0 ? "טסים היום" : "כבר בדרך";
+  } else { flaps.innerHTML = ""; label.textContent = "מתי טסים?"; }
+  $("#len").textContent = c.known ? `${c.days} ימים · ${c.nights} לילות` : `חישוב לפי ${DEFAULT_DAYS} ימים — אפשר לשנות בתאריכים`;
+  const err = $("#err"); err.hidden = !c.bad; err.textContent = c.bad ? "תאריך החזרה לפני תאריך היציאה" : "";
+  const items = allItems(t);
+  $("#meters").innerHTML = Object.entries(BAGS).map(([k,v])=>{
+    const its = items.filter(x=>x.b===k), done = its.filter(x=>x.done).length;
+    const pct = its.length ? Math.round(done/its.length*100) : 0;
+    return `<div class="meter"><b>${pct}%</b>${v.name}<div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join("");
+}
+
+/* ===================== render: trips ===================== */
+function renderTrips(){
+  let html = `<div class="page-head"><h2>הנסיעות שלי</h2><p>כל נסיעה שומרת רשימה משלה. אפשר להחזיק כמה במקביל.</p></div>`;
+  if(!state.trips.length){
+    html += `<div class="empty">עוד אין נסיעות. אפשר לפתוח אחת עכשיו — לוקח 20 שניות.</div>`;
+  } else {
+    const sorted = [...state.trips].sort((a,b)=>{
+      if(a.dep && b.dep) return a.dep.localeCompare(b.dep);
+      if(a.dep) return -1; if(b.dep) return 1; return b.created - a.created;
+    });
+    for(const t of sorted){
+      const pr = progress(t), pct = pr.total ? Math.round(pr.done/pr.total*100) : 0;
+      const dates = t.dep ? `${fmtDate(t.dep)}${t.ret?" – "+fmtDate(t.ret):""}` : "בלי תאריכים";
+      let when = "";
+      if(t.dep){
+        const today = new Date(); today.setHours(0,0,0,0);
+        const d = Math.round((new Date(t.dep+"T00:00:00") - today)/86400000);
+        when = d > 0 ? `עוד ${d} ימים` : d === 0 ? "היום" : "עברה";
+      }
+      const tags = (t.packs||[]).filter(p=>p!=="core").map(p=>PACK_NAMES[p]).filter(Boolean).join(" · ");
+      html += `<div class="tripcard${t.id===state.current?" active":""}">
+        <div class="ring" style="--deg:${pct*3.6}deg"><span>${pct}%</span></div>
+        <div class="meta">
+          <div class="nm">${esc(tripTitle(t))}${when?`<span class="pill${when.startsWith("עוד")||when==="היום"?" now":""}">${esc(when)}</span>`:""}</div>
+          <div class="sub">${esc(dates)} · ${pr.done}/${pr.total} פריטים${tags?" · "+esc(tags):""}</div>
+          <div class="tripacts">
+            <button data-open="${t.id}">פתיחה</button>
+            <button data-dup="${t.id}">שכפול</button>
+            <button class="danger" data-deltrip="${t.id}">מחיקה</button>
+          </div>
+        </div>
+      </div>`;
+    }
+  }
+  html += `<button class="bigbtn" id="newtrip">+ נסיעה חדשה</button>
+    <div class="chips" style="margin-top:10px;justify-content:center">
+      <button data-quick="usa">התחלה מהירה: ארה״ב</button>
+      <button data-quick="eu">התחלה מהירה: אירופה</button>
+    </div>`;
+  html += settingsHTML(true);
+  $("#screen").innerHTML = html;
+}
+
+/* ===================== render: wizard ===================== */
+function chipRow(list, sel, attr, multi){
+  return `<div class="chips">${list.map(k=>`<button type="button" data-${attr}="${k}" aria-pressed="${multi?sel.includes(k):sel===k}">${PACK_NAMES[k]}</button>`).join("")}</div>`;
+}
+function renderWizard(){
+  const w = wiz;
+  $("#screen").innerHTML = `
+  <div class="page-head"><h2>נסיעה חדשה</h2><p>הרשימה נבנית לפי מה שתבחר כאן. אפשר לשנות הכול אחר כך.</p></div>
+  <div class="card">
+    <div class="fld two">
+      <div><label for="w_name">שם הנסיעה</label><input id="w_name" type="text" value="${esc(w.name)}" placeholder="למשל: ארה״ב דצמבר"></div>
+      <div><label for="w_dest">יעד</label><input id="w_dest" type="text" value="${esc(w.dest)}" placeholder="למשל: ניו יורק"></div>
+    </div>
+    <div class="fld two">
+      <div><label for="w_dep">יציאה</label><input id="w_dep" type="date" value="${w.dep}"></div>
+      <div><label for="w_ret">חזרה</label><input id="w_ret" type="date" value="${w.ret}"></div>
+    </div>
+    <div class="fld"><label>לאן טסים</label>${chipRow(REGIONS, w.region, "region", false)}
+      <div class="hint">זה קובע ויזה, שקע חשמל ואזהרות מכס.</div></div>
+    <div class="fld"><label>מזג אוויר ביעד</label>${chipRow(CLIMATES, w.climate, "climate", false)}
+      <div class="hint">קובע אם אורזים תרמי ומעיל או בגד ים וקרם הגנה.</div></div>
+    <div class="fld"><label>מה עוד יש בנסיעה</label>${chipRow(EXTRAS, w.extras, "extra", true)}</div>
+    <div class="go">
+      <button id="w_create">יצירת הרשימה</button>
+      <button class="ghost" id="w_cancel">ביטול</button>
+    </div>
+  </div>`;
+}
+
+/* ===================== render: list ===================== */
+function hl(t){
+  if(!query) return esc(t);
+  const q = query.trim(); if(!q) return esc(t);
+  const i = t.toLowerCase().indexOf(q.toLowerCase());
+  return i<0 ? esc(t) : esc(t.slice(0,i)) + "<mark>" + esc(t.slice(i,i+q.length)) + "</mark>" + esc(t.slice(i+q.length));
+}
+function leftHTML(x){
+  if(x.plan === 0) return `<div class="left ok">לא לוקחים</div>`;
+  const d = x.plan - x.packed;
+  if(d > 0) return `<div class="left">נשאר ${d}</div>`;
+  if(d < 0) return `<div class="left over">${-d} מעבר</div>`;
+  return `<div class="left ok">✓ הכול</div>`;
+}
+function itemHTML(x){
+  const badges = [];
+  if(x.f.includes("carry")) badges.push((x.b==="s"||x.b==="r") ? '<span class="badge warnb">⚠ אסור במזוודה</span>' : '<span class="badge carry">רק בתיק גב</span>');
+  if(x.f.includes("liquid")) badges.push(x.b==="b" ? '<span class="badge liquid">עד 100 מ״ל</span>' : '<span class="badge wear">במזוודה אין מגבלת נוזלים</span>');
+  if(x.f.includes("wear")) badges.push('<span class="badge wear">ללבוש</span>');
+  if(QTY_BAGS.includes(x.b)) badges.push(`<button class="badge ph" data-flipbag="${x.id}">⇄ ${BAGS[x.b].name}</button>`);
+  badges.push(`<button class="badge ph" data-cycle="${x.id}">⇄ ${PHASES[x.p]}</button>`);
+  const name = editing === x.id
+    ? `<div class="edit-row"><input id="editbox" data-editbox="${x.id}" value="${esc(x.t)}" aria-label="שם הפריט"><button type="button" data-skip="${x.id}">${x.skip?"צריך בכל זאת":"אין צורך"}</button><button type="button" data-remove="${x.id}">מחיקה</button></div><div class="phasepick">${Object.entries(BAGS).map(([k,v])=>`<button type="button" style="--c:${v.c}" data-setbag="${x.id}:${k}" aria-pressed="${x.b===k}">${v.name}</button>`).join("")}</div><div class="phasepick">${Object.entries(PHASES).map(([k,v])=>`<button type="button" data-setphase="${x.id}:${k}" aria-pressed="${x.p===k}">${v}</button>`).join("")}</div>`
+    : `<button class="name" data-edit="${x.id}" title="לחיצה לעריכה">${hl(x.t)}</button>`;
+  let calc = "";
+  if(x.skip) calc = `<div class="calc">אין צורך · <button data-skip="${x.id}">להחזיר לרשימה</button></div>`;
+  else if(x.hasQty && x.manual) calc = `<div class="calc">שינית ידנית · <button data-auto="${x.id}">חזרה ל־${x.auto}</button></div>`;
+  else if(x.hasQty && x.rule) calc = `<div class="calc">⚙ ${esc(x.why)}${span(trip()).capped ? " · עם כביסה" : ""}</div>`;
+  let qty = "";
+  if(x.hasQty && !x.skip){
+    const cls = x.packed > x.plan ? "over" : (x.plan > 0 && x.packed >= x.plan ? "full" : "");
+    qty = `<div class="qty">
+      <div class="step"><button data-dec="${x.id}" aria-label="להוריד אחד">−</button><input class="packed ${cls}" type="number" inputmode="numeric" min="0" max="99" data-packed="${x.id}" value="${x.packed}" aria-label="כמה נארז"><button data-inc="${x.id}" aria-label="להוסיף אחד">+</button></div>
+      <div class="of">מתוך <input type="number" inputmode="numeric" min="0" max="99" data-plan="${x.id}" value="${x.plan}" class="${x.manual?"manual":""}" aria-label="כמה צריך">${x.u?esc(x.u):""}</div>
+      ${leftHTML(x)}
+    </div>`;
+  }
+  const tools = ui.del && editing!==x.id
+    ? `<button class="sel" data-sel="${x.id}" aria-pressed="${selected.has(x.id)}" aria-label="לבחור את ${esc(x.t)}">${selected.has(x.id)?"✓":""}</button>`
+    : (String(x.id).startsWith("u") && editing!==x.id ? `<button class="del" data-remove="${x.id}" aria-label="למחוק את ${esc(x.t)}">×</button>` : "");
+  return `<div class="item${ui.del&&selected.has(x.id)?" picked":""}${x.done?" done":""}${(x.hasQty&&x.plan===0)||x.skip?" skip":""}${x.skip?" notneeded":""}">
+    <button class="chk" data-id="${x.id}" role="checkbox" aria-checked="${x.done}" aria-label="${esc(x.t)}">${CHECK}</button>
+    <div class="txt">${name}${x.n?`<div class="note">${esc(x.n)}</div>`:""}${calc}<div class="badges">${badges.join("")}</div></div>
+    ${qty}
+    ${tools}
+  </div>`;
+}
+function alertsHTML(t){
+  const packs = t.packs || [];
+  let rows = [];
+  for(const k of ["usa","eu","other","cold","hot"]) if(packs.includes(k) && ALERTS[k]) rows = rows.concat(ALERTS[k]);
+  rows = rows.concat(ALERTS.base);
+  if(!rows.length) return "";
+  return `<details class="alerts"><summary>${rows.length} דברים לבדוק לפני שאורזים</summary>` +
+    rows.map(([h,tag,body])=>`<div class="alert"><h4>${esc(h)}<span class="tag ${tag}">${tag==="fact"?"עובדה":"לבדוק"}</span></h4>${esc(body)}</div>`).join("") +
+    `</details>`;
+}
+function mostPhase(list){ const c={}; list.forEach(x=>c[x.p]=(c[x.p]||0)+1); return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0] || "now"; }
+function navHTML(t){
+  const items = allItems(t);
+  const left = p => items.filter(x=>(p==="all"||x.p===p) && !x.done).length;
+  const phases = ["all","now","later","last"].map(p=>
+    `<button data-phase="${p}" aria-pressed="${ui.phase===p}"><span class="ph-name">${p==="all"?"הכול":PHASES[p]}</span><span class="ph-sub">${left(p)} נשארו</span></button>`).join("");
+  const bags = `<button data-bag="all" aria-pressed="${ui.bag==="all"}">הכול</button>` +
+    Object.entries(BAGS).map(([k,v])=>{
+      const n = items.filter(x=>x.b===k && (ui.phase==="all"||x.p===ui.phase) && !x.done).length;
+      return `<button data-bag="${k}" style="--c:${v.c}" aria-pressed="${ui.bag===k}"><span class="dot"></span>${v.name} · ${n}</button>`;
+    }).join("");
+  const scope = items.filter(x=>(ui.phase==="all"||x.p===ui.phase)&&(ui.bag==="all"||x.b===ui.bag));
+  const nl = scope.filter(x=>!x.done).length, nd = scope.length - nl;
+  const status = [["left",`הרשימה · נשאר ${nl}`],["done",`נארז · ${nd}`]]
+    .map(([k,l])=>`<button data-status="${k}" aria-pressed="${ui.status===k}">${l}</button>`).join("");
+  return `<nav class="phases">${phases}</nav><nav class="bags">${bags}</nav><nav class="status">${status}</nav>
+    <div class="search"><input id="q" type="search" placeholder="🔍 חיפוש פריט…" aria-label="חיפוש" value="${esc(query)}" autocomplete="off"><button id="qclear" aria-label="ניקוי חיפוש" ${query?"":"hidden"}>×</button></div>
+    <div class="tools"><button id="hidedone" aria-pressed="${!!t.hideDone}" ${ui.status==="done"?"hidden":""}>${t.hideDone?"👁 להציג מה שסיימתי":"🙈 להחביא מה שסיימתי"}</button><button id="editmode" aria-pressed="${!!ui.del}">${ui.del?"סיימתי":"✎ בחירה: העברה / מחיקה / אין צורך"}</button></div>`;
+}
+function listBodyHTML(t){
+  if(query){
+    const q = norm(query);
+    const hits = allItems(t).filter(x=> norm(x.t).includes(q) || norm(x.n).includes(q) || norm(x.g).includes(q) || norm(BAGS[x.b].name).includes(q));
+    let html = `<div class="searchnote">${hits.length ? `${hits.length} תוצאות בכל הרשימה` : "לא נמצא. אפשר להוסיף אותו בשורת ההוספה של הקבוצה המתאימה."}</div>`;
+    for(const [k,v] of Object.entries(BAGS)){
+      const its = hits.filter(x=>x.b===k); if(!its.length) continue;
+      html += `<section class="section" style="--c:${v.c}"><div class="sec-head"><h2>${v.name}</h2><span class="where">${v.where}</span></div>`;
+      for(const g of [...new Set(its.map(x=>x.g))]) html += `<div class="group"><h3><span>${esc(g)}</span></h3><div class="items">${its.filter(x=>x.g===g).map(itemHTML).join("")}</div></div>`;
+      html += `</section>`;
+    }
+    return html;
+  }
+  const scope = allItems(t).filter(x=>(ui.phase==="all"||x.p===ui.phase||keep.has(x.id))&&(ui.bag==="all"||x.b===ui.bag||keep.has(x.id)));
+  const items = scope.filter(x=> ui.status==="done" ? (x.done || keep.has(x.id)) : (!t.hideDone || !x.done || keep.has(x.id)));
+  if(!items.length){
+    const msg = !scope.length ? "אין כאן פריטים לשלב הזה. אפשר להוסיף אחד בשורת ההוספה."
+      : ui.status==="done" ? "עוד לא ארזת כלום מהחלק הזה." : "סיימת את כל מה שיש כאן.";
+    return `<div class="empty">${msg}</div>`;
+  }
+  let html = "";
+  for(const [k,v] of Object.entries(BAGS)){
+    const its = items.filter(x=>x.b===k); if(!its.length) continue;
+    html += `<section class="section" style="--c:${v.c}"><div class="sec-head"><h2>${v.name}</h2><span class="where">${v.where}</span></div>`;
+    for(const g of [...new Set(its.map(x=>x.g))]){
+      const gi = its.filter(x=>x.g===g);
+      const all = scope.filter(x=>x.b===k && x.g===g);
+      const ph = ui.phase!=="all" ? ui.phase : mostPhase(all);
+      const selAll = ui.del ? ` <button class="selgroup" data-selgroup="${gi.map(x=>x.id).join(",")}">${gi.every(x=>selected.has(x.id))?"לבטל בחירה":"לבחור הכול"}</button>` : "";
+      const add = ui.status==="done" ? "" : `<form class="gadd" data-addbag="${k}" data-addgroup="${esc(g)}" data-addphase="${ph}" autocomplete="off"><input class="t" placeholder="+ להוסיף ל${esc(g)}" aria-label="פריט חדש ב${esc(g)}">${QTY_BAGS.includes(k)?'<input class="n" type="number" inputmode="numeric" min="0" value="1" aria-label="כמות">':""}<button>הוספה</button></form>`;
+      html += `<div class="group"><h3><span>${esc(g)}${selAll}</span><span>${all.filter(x=>x.done).length}/${all.length}</span></h3><div class="items">${gi.map(itemHTML).join("")}${add}</div></div>`;
+    }
+    html += `</section>`;
+  }
+  return html;
+}
+function settingsHTML(global){
+  const t = trip();
+  let rows = "";
+  if(!global && t){
+    rows += `<div class="srow"><div class="lbl"><b>לאפס את מה שנארז</b><span>מנקה סימונים וכמויות בנסיעה הזו. העריכות נשארות.</span></div><button class="danger" data-act="resetpacked">איפוס</button></div>`;
+    rows += `<div class="srow"><div class="lbl"><b>להחזיר את הרשימה למקור</b><span>מבטל עריכות, מחיקות, פריטים שהוספת וסימוני ״אין צורך״.</span></div><button class="danger" data-act="resetlist">החזרה</button></div>`;
+    if(Object.keys(t.hidden).length) rows += `<div class="srow"><div class="lbl"><b>פריטים שהוסרו</b><span>${Object.keys(t.hidden).length} פריטים מוסתרים.</span></div><button data-act="restore">להחזיר אותם</button></div>`;
+    rows += `<div class="srow"><div class="lbl"><b>תבנית הנסיעה</b><span>${(t.packs||[]).map(p=>PACK_NAMES[p]).filter(Boolean).join(" · ")}</span></div><button data-act="editpacks">לשנות</button></div>`;
+    rows += `<div class="srow"><div class="lbl"><b>למחוק את הנסיעה</b><span>${esc(tripTitle(t))} יימחק לגמרי.</span></div><button class="danger" data-act="deltrip">מחיקה</button></div>`;
+  }
+  rows += `<div class="srow"><div class="lbl"><b>גיבוי</b><span>להעתיק את כל הנסיעות לקובץ טקסט, או להחזיר מגיבוי.</span></div><button data-act="export">ייצוא</button><button data-act="import">ייבוא</button></div>`;
+  rows += `<div class="srow"><div class="lbl"><b>לאפס הכול</b><span>מוחק את כל הנסיעות ומתחיל מאפס.</span></div><button class="danger" data-act="wipe">איפוס מלא</button></div>`;
+  return `<details class="settings"><summary>הגדרות, גיבוי ואיפוס</summary>${rows}</details>
+    <div class="foot"><span id="sync">${syncLabel}</span><span>גרסה ${VERSION}</span></div>`;
+}
+function renderList(){
+  const t = trip();
+  if(!t){ ui.screen = "trips"; render(); return; }
+  $("#screen").innerHTML = navHTML(t) + alertsHTML(t) + `<div id="list">${listBodyHTML(t)}</div>` + settingsHTML(false);
+  $("#list").classList.toggle("editing", !!ui.del);
+  const eb = $("#editbox"); if(eb){ eb.focus(); eb.select(); }
+}
+
+/* ===================== render ===================== */
+function remember(){
+  const t = trip(); if(!t || ui.screen!=="list") return;
+  if(ui.status==="done") document.querySelectorAll("#list .item.done [data-id]").forEach(b=>keep.add(b.dataset.id));
+  else if(t.hideDone) document.querySelectorAll("#list .item:not(.done) [data-id]").forEach(b=>keep.add(b.dataset.id));
+}
+function render(){
+  remember();
+  renderBoard();
+  if(ui.screen === "wizard") renderWizard();
+  else if(ui.screen === "list") renderList();
+  else renderTrips();
+  document.body.classList.toggle("selecting", ui.screen==="list" && !!ui.del);
+  const sb = $("#selbar"); sb.hidden = !(ui.screen==="list" && ui.del);
+  if(!sb.hidden){
+    $("#selcount").textContent = selected.size ? `נבחרו ${selected.size}` : "לסמן פריטים בריבועים";
+    sb.querySelectorAll(".selrow button").forEach(b=>b.disabled = !selected.size);
+  }
+  saveUI();
+}
+
+/* ===================== mutations ===================== */
+function setPacked(id, n){ const t = trip(), x = byId(id); if(!x) return; keep.add(id); t.packed[id] = Math.max(0, Math.min(99, n)); delete t.checked[id]; }
+function setPlan(id, n){
+  const t = trip(), x = byId(id); if(!x) return;
+  n = Math.max(0, Math.min(99, Math.round(n)));
+  t.edits[id] = t.edits[id] || {};
+  if(n === x.auto) delete t.edits[id].q; else t.edits[id].q = n;
+  if(!Object.keys(t.edits[id]).length) delete t.edits[id];
+}
+function setField(id, key, val, baseVal){
+  const t = trip();
+  keep.add(id);
+  const cu = t.custom.find(c=>c.id===id);
+  if(cu){ cu[key === "t" ? "t" : key] = val; if(key==="b" && cu.q==null && QTY_BAGS.includes(val)) cu.q = 1; return; }
+  t.edits[id] = t.edits[id] || {};
+  if(val === baseVal) delete t.edits[id][key]; else t.edits[id][key] = val;
+  if(!Object.keys(t.edits[id]).length) delete t.edits[id];
+}
+function setText(id, v){ v = v.trim(); if(!v) return; const b = CATALOG.find(x=>x.id===id); setField(id,"t",v,b&&b.t); }
+function setBag(id, v){ const b = CATALOG.find(x=>x.id===id); setField(id,"b",v,b&&b.b); }
+function setPhase(id, v){ const b = CATALOG.find(x=>x.id===id); setField(id,"p",v,b&&b.p); }
+function nextBag(b){ return QTY_BAGS[(QTY_BAGS.indexOf(b)+1) % QTY_BAGS.length]; }
+function removeItem(id){
+  const t = trip();
+  if(t.custom.find(c=>c.id===id)) t.custom = t.custom.filter(c=>c.id!==id); else t.hidden[id] = true;
+  delete t.checked[id]; delete t.packed[id]; delete t.edits[id]; delete t.skip[id];
+}
+
+/* ===================== events ===================== */
+document.addEventListener("click", e=>{
+  const T = e.target; let el;
+  /* --- trips screen --- */
+  if(el = T.closest("[data-open]")){ state.current = el.dataset.open; ui.screen="list"; keep.clear(); selected.clear(); ui.del=false; persist(); render(); scrollTop(); return; }
+  if(el = T.closest("[data-dup]")){
+    const src = state.trips.find(t=>t.id===el.dataset.dup); if(!src) return;
+    const copy = newTrip(JSON.parse(JSON.stringify(src)));
+    copy.id = uid(); copy.created = Date.now(); copy.name = (src.name||src.dest||"נסיעה") + " (עותק)";
+    copy.checked = {}; copy.packed = {}; copy.dep = ""; copy.ret = "";
+    state.trips.push(copy); state.current = copy.id; ui.screen="list"; persist(); render(); scrollTop(); return;
+  }
+  if(el = T.closest("[data-deltrip]")){ armed(el, ()=>{
+      const id = el.dataset.deltrip;
+      state.trips = state.trips.filter(t=>t.id!==id);
+      if(state.current===id) state.current = state.trips[0] ? state.trips[0].id : "";
+      persist(); render();
+    }, "בטוח? ללחוץ שוב"); return; }
+  if(T.closest("#newtrip")){ wiz = {name:"",dest:"",dep:"",ret:"",region:"eu",climate:"mild",extras:[]}; ui.screen="wizard"; render(); scrollTop(); return; }
+  if(el = T.closest("[data-quick]")){
+    const r = el.dataset.quick;
+    wiz = {name: r==="usa"?"ארה״ב":"אירופה", dest:"", dep:"", ret:"", region:r, climate:"cold", extras: r==="usa"?["car","work"]:[]};
+    ui.screen="wizard"; render(); scrollTop(); return;
+  }
+  if(T.closest("#backtrips")){ ui.screen="trips"; ui.del=false; selected.clear(); query=""; render(); scrollTop(); return; }
+  /* --- wizard --- */
+  if(el = T.closest("[data-region]")){ wiz.region = el.dataset.region; grabWiz(); renderWizard(); return; }
+  if(el = T.closest("[data-climate]")){ wiz.climate = el.dataset.climate; grabWiz(); renderWizard(); return; }
+  if(el = T.closest("[data-extra]")){ const k = el.dataset.extra; wiz.extras = wiz.extras.includes(k) ? wiz.extras.filter(x=>x!==k) : wiz.extras.concat(k); grabWiz(); renderWizard(); return; }
+  if(T.closest("#w_cancel")){ ui.screen = wiz.editing ? "list" : "trips"; wiz=null; render(); return; }
+  if(T.closest("#w_create")){ grabWiz(); commitWiz(); return; }
+  /* --- settings --- */
+  if(el = T.closest("[data-act]")){ settingsAction(el); return; }
+  /* --- list nav --- */
+  if(el = T.closest("button[data-phase]")){ keep.clear(); ui.phase = el.dataset.phase; render(); return; }
+  if(el = T.closest("button[data-status]")){ keep.clear(); ui.status = el.dataset.status; render(); return; }
+  if(el = T.closest("button[data-bag]")){ keep.clear(); ui.bag = el.dataset.bag; render(); return; }
+  if(T.closest("#hidedone")){ const t = trip(); t.hideDone = !t.hideDone; keep.clear(); persist(); render(); return; }
+  if(T.closest("#editmode")){ ui.del = !ui.del; selected.clear(); editing = null; render(); return; }
+  if(T.closest("#qclear")){ query=""; render(); const q=$("#q"); if(q) q.focus(); return; }
+  /* --- bulk --- */
+  if(el = T.closest("[data-sel]")){ const id = el.dataset.sel; selected.has(id) ? selected.delete(id) : selected.add(id); render(); return; }
+  if(el = T.closest("[data-selgroup]")){ const ids = el.dataset.selgroup.split(","); const all = ids.every(i=>selected.has(i)); ids.forEach(i=> all ? selected.delete(i) : selected.add(i)); render(); return; }
+  if(el = T.closest("[data-bulk]")){
+    const a = el.dataset.bulk, ids = [...selected], t = trip();
+    if(a==="exit"){ ui.del=false; selected.clear(); render(); return; }
+    if(a==="clear"){ selected.clear(); render(); return; }
+    if(a.startsWith("p:")) ids.forEach(id=>setPhase(id, a.slice(2)));
+    else if(a.startsWith("b:")) ids.forEach(id=>setBag(id, a.slice(2)));
+    else if(a==="skip") ids.forEach(id=>{ t.skip[id]=true; keep.add(id); });
+    else if(a==="unskip") ids.forEach(id=>{ delete t.skip[id]; keep.add(id); });
+    else if(a==="del") ids.forEach(removeItem);
+    selected.clear(); persist(); render(); return;
+  }
+  /* --- item --- */
+  if(el = T.closest(".chk")){
+    const t = trip(), x = byId(el.dataset.id); if(!x) return;
+    if(x.skip){ delete t.skip[x.id]; keep.add(x.id); persist(); render(); return; }
+    if(x.hasQty) setPacked(x.id, x.done ? 0 : x.plan);
+    else { keep.add(x.id); if(t.checked[x.id]) delete t.checked[x.id]; else t.checked[x.id] = true; }
+    persist(); render(); return;
+  }
+  if(el = T.closest("[data-inc]")){ const x = byId(el.dataset.inc); setPacked(x.id, x.packed+1); persist(); render(); return; }
+  if(el = T.closest("[data-dec]")){ const x = byId(el.dataset.dec); setPacked(x.id, x.packed-1); persist(); render(); return; }
+  if(el = T.closest("[data-auto]")){ const t = trip(), id = el.dataset.auto; if(t.edits[id]){ delete t.edits[id].q; if(!Object.keys(t.edits[id]).length) delete t.edits[id]; } persist(); render(); return; }
+  if(el = T.closest("[data-skip]")){ const t = trip(), id = el.dataset.skip; editing=null; keep.add(id); if(t.skip[id]) delete t.skip[id]; else t.skip[id]=true; persist(); render(); return; }
+  if(el = T.closest("[data-remove]")){ editing=null; removeItem(el.dataset.remove); persist(); render(); return; }
+  if(el = T.closest("[data-setbag]")){ const [id,v] = el.dataset.setbag.split(":"); setBag(id,v); editing=null; persist(); render(); return; }
+  if(el = T.closest("[data-setphase]")){ const [id,v] = el.dataset.setphase.split(":"); setPhase(id,v); editing=null; persist(); render(); return; }
+  if(el = T.closest("[data-flipbag]")){ const x = byId(el.dataset.flipbag); setBag(x.id, nextBag(x.b)); persist(); render(); return; }
+  if(el = T.closest("[data-cycle]")){ const x = byId(el.dataset.cycle); const o = ["now","later","last"]; setPhase(x.id, o[(o.indexOf(x.p)+1)%3]); persist(); render(); return; }
+  if(el = T.closest("[data-edit]")){ editing = el.dataset.edit; render(); return; }
+});
+document.addEventListener("pointerdown", e=>{ if(e.target.closest(".edit-row button, .phasepick button")) e.preventDefault(); });
+document.addEventListener("focusout", e=>{
+  const t = e.target;
+  if(t.matches && t.matches("[data-editbox]")){ setText(t.dataset.editbox, t.value); editing = null; persist(); render(); }
+});
+document.addEventListener("keydown", e=>{
+  const t = e.target;
+  if(t.matches && t.matches("[data-editbox]")){
+    if(e.key==="Enter"){ e.preventDefault(); t.blur(); }
+    if(e.key==="Escape"){ const x = byId(t.dataset.editbox); t.value = x?x.t:""; t.blur(); }
+  }
+  if(t.matches && t.matches("[data-plan],[data-packed]") && e.key==="Enter"){ e.preventDefault(); t.blur(); }
+  if(e.key==="Escape"){ if($("#overlay").classList.contains("on")) closeDoor(); else if($("#sheet").classList.contains("on")) closeSheet(); }
+});
+document.addEventListener("change", e=>{
+  const t = e.target;
+  if(t.matches("[data-packed]")){ const v = parseInt(t.value,10); setPacked(t.dataset.packed, isNaN(v)?0:v); persist(); render(); return; }
+  if(t.matches("[data-plan]")){ keep.add(t.dataset.plan); const v = parseInt(t.value,10); if(!isNaN(v)) setPlan(t.dataset.plan, v); persist(); render(); return; }
+  if(t.id==="dep"){ trip().dep = t.value; persist(); render(); return; }
+  if(t.id==="ret"){ trip().ret = t.value; persist(); render(); return; }
+});
+document.addEventListener("input", e=>{
+  const t = e.target;
+  if(t.id==="dest"){ trip().dest = t.value; document.title = (t.value||"נסיעה") + " — אריזה"; $("#tripname").textContent = t.value || tripTitle(trip()); persist(); return; }
+  if(t.id==="q"){ query = t.value; const c=$("#qclear"); if(c) c.hidden = !query; $("#list").innerHTML = listBodyHTML(trip()); return; }
+});
+document.addEventListener("submit", e=>{
+  const f = e.target; if(!f.classList.contains("gadd")) return;
+  e.preventDefault();
+  const v = f.querySelector(".t").value.trim(); if(!v) return;
+  const b = f.dataset.addbag, nEl = f.querySelector(".n"), n = nEl ? parseInt(nEl.value,10) : NaN;
+  trip().custom.push({id:"u"+uid(), t:v, b, p:f.dataset.addphase, g:f.dataset.addgroup, q: QTY_BAGS.includes(b) ? (isNaN(n)?1:Math.max(0,n)) : null});
+  persist(); render();
+  const again = [...document.querySelectorAll(".gadd")].find(x=>x.dataset.addbag===b && x.dataset.addgroup===f.dataset.addgroup);
+  if(again) again.querySelector(".t").focus();
+});
+$("#laundry").addEventListener("click", ()=>{ const t = trip(); t.laundry = !t.laundry; persist(); render(); });
+
+/* ===================== wizard logic ===================== */
+function grabWiz(){
+  const g = id => { const e = document.getElementById(id); return e ? e.value : ""; };
+  wiz.name = g("w_name"); wiz.dest = g("w_dest"); wiz.dep = g("w_dep"); wiz.ret = g("w_ret");
+}
+function commitWiz(){
+  const packs = ["core", wiz.region, wiz.climate].concat(wiz.extras);
+  if(wiz.editing){
+    const t = state.trips.find(x=>x.id===wiz.editing);
+    if(t){ t.name=wiz.name; t.dest=wiz.dest; t.dep=wiz.dep; t.ret=wiz.ret; t.packs=packs; }
+    ui.screen = "list";
+  } else {
+    const t = newTrip({name:wiz.name, dest:wiz.dest, dep:wiz.dep, ret:wiz.ret, packs});
+    if(!t.name) t.name = t.dest || "נסיעה חדשה";
+    state.trips.push(t); state.current = t.id; ui.screen = "list";
+  }
+  wiz = null; keep.clear(); persist(); render(); scrollTop();
+}
+
+/* ===================== settings actions ===================== */
+let armTimer;
+function armed(btn, fn, label){
+  if(!btn.classList.contains("armed")){
+    btn.dataset.orig = btn.textContent; btn.classList.add("armed"); btn.textContent = label || "בטוח? ללחוץ שוב";
+    clearTimeout(armTimer); armTimer = setTimeout(()=>{ btn.classList.remove("armed"); btn.textContent = btn.dataset.orig; }, 3000);
+    return;
+  }
+  btn.classList.remove("armed"); btn.textContent = btn.dataset.orig; fn();
+}
+function settingsAction(el){
+  const a = el.dataset.act, t = trip();
+  if(a==="resetpacked"){ armed(el, ()=>{ t.checked={}; t.packed={}; keep.clear(); persist(); render(); }); return; }
+  if(a==="resetlist"){ armed(el, ()=>{ t.edits={}; t.hidden={}; t.skip={}; t.custom=[]; keep.clear(); persist(); render(); }); return; }
+  if(a==="restore"){ t.hidden={}; persist(); render(); return; }
+  if(a==="editpacks"){
+    const p = t.packs||[];
+    wiz = {editing:t.id, name:t.name, dest:t.dest, dep:t.dep, ret:t.ret,
+      region: REGIONS.find(k=>p.includes(k)) || "other",
+      climate: CLIMATES.find(k=>p.includes(k)) || "mild",
+      extras: EXTRAS.filter(k=>p.includes(k))};
+    ui.screen="wizard"; render(); scrollTop(); return;
+  }
+  if(a==="deltrip"){ armed(el, ()=>{
+      state.trips = state.trips.filter(x=>x.id!==t.id);
+      state.current = state.trips[0] ? state.trips[0].id : "";
+      ui.screen="trips"; persist(); render();
+    }); return; }
+  if(a==="wipe"){ armed(el, ()=>{ state = {v:3, current:"", trips:[]}; ui.screen="trips"; persist(); render(); }, "למחוק את הכול? ללחוץ שוב"); return; }
+  if(a==="export"){ openExport(); return; }
+  if(a==="import"){ openImport(); return; }
+}
+
+/* ===================== sheet (backup) ===================== */
+function openSheet(html){ $("#sheetinner").innerHTML = html; $("#sheet").classList.add("on"); }
+function closeSheet(){ $("#sheet").classList.remove("on"); }
+function openExport(){
+  const data = JSON.stringify(state);
+  openSheet(`<h3>גיבוי</h3><p>הטקסט הזה מכיל את כל הנסיעות. להעתיק ולשמור איפה שנוח — פתק, מייל, מה שבא.</p>
+    <textarea id="expbox" readonly>${esc(data)}</textarea>
+    <div class="go"><button id="copyexp">העתקה</button><button class="ghost" id="closesheet">סגירה</button></div>`);
+  const box = $("#expbox"); box.focus(); box.select();
+  $("#copyexp").onclick = async ()=>{
+    box.select();
+    try{ await navigator.clipboard.writeText(data); $("#copyexp").textContent = "הועתק ✓"; }
+    catch(e){ try{ document.execCommand("copy"); $("#copyexp").textContent = "הועתק ✓"; }catch(e2){ $("#copyexp").textContent = "להעתיק ידנית"; } }
+  };
+  $("#closesheet").onclick = closeSheet;
+}
+function openImport(){
+  openSheet(`<h3>ייבוא מגיבוי</h3><p>להדביק כאן את הטקסט מהגיבוי. זה מחליף את כל הנסיעות הקיימות.</p>
+    <textarea id="impbox" placeholder='{"v":3,"trips":[...]}'></textarea>
+    <div id="imperr" class="hint"></div>
+    <div class="go"><button id="doimp">ייבוא</button><button class="ghost" id="closesheet">ביטול</button></div>`);
+  $("#impbox").focus();
+  $("#closesheet").onclick = closeSheet;
+  $("#doimp").onclick = ()=>{
+    const raw = $("#impbox").value.trim();
+    if(!raw){ $("#imperr").textContent = "השדה ריק."; return; }
+    let parsed;
+    try{ parsed = JSON.parse(raw); }catch(e){ $("#imperr").textContent = "זה לא נראה כמו גיבוי תקין. צריך להדביק את כל הטקסט."; return; }
+    if(!parsed || !Array.isArray(parsed.trips)){ $("#imperr").textContent = "לא נמצאו נסיעות בטקסט הזה."; return; }
+    state = normalize(parsed); ui.screen = "trips"; closeSheet(); persist(); render();
+  };
+}
+$("#sheet").addEventListener("click", e=>{ if(e.target.id==="sheet") closeSheet(); });
+
+/* ===================== door check ===================== */
+let door = {i:0, res:[]};
+function doorIds(){
+  const t = trip(); if(!t) return [];
+  const live = new Set(allItems(t).filter(x=>!x.skip).map(x=>x.id));
+  return DOOR_ORDER.filter(id => live.has(id));
+}
+function doorRender(){
+  const ids = doorIds(), n = ids.length;
+  $("#ovsteps").innerHTML = ids.map((_,k)=>`<i class="${door.res[k]===true?"y":door.res[k]===false?"n":""}"></i>`).join("");
+  if(door.i >= n){
+    const miss = ids.filter((_,k)=>door.res[k]===false).map(id=>byId(id).t);
+    $("#ovcount").textContent = "סיום";
+    const t = trip();
+    $("#ovcard").innerHTML = miss.length
+      ? `<div class="ov-q">רגע, חסר</div><ul class="missing">${miss.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>`
+      : `<div class="ov-q">אפשר לצאת</div><div class="ov-hint">הכול אצלך. טיסה טובה${t&&t.dest?" ל"+esc(t.dest):""}.</div>`;
+    $("#ovactions").innerHTML = `<button class="no" id="ovagain">עוד פעם</button><button class="yes" id="ovdone">סגירה</button>`;
+    $("#ovagain").onclick = ()=>{ door={i:0,res:[]}; setActions(); doorRender(); };
+    $("#ovdone").onclick = closeDoor;
+    return;
+  }
+  const it = byId(ids[door.i]);
+  $("#ovcount").textContent = `${door.i+1} מתוך ${n}`;
+  $("#ovcard").innerHTML = `<div class="ov-q">${esc(it.t)}${it.hasQty && it.plan>1 ? " ×"+it.plan : ""}</div><div class="ov-hint">${esc(DOOR_HINT[it.id]||"")}</div>`;
+}
+function setActions(){
+  $("#ovactions").innerHTML = `<button class="no" id="ovno">חסר לי</button><button class="yes" id="ovyes">יש ✓</button>`;
+  $("#ovyes").onclick = ()=>answer(true); $("#ovno").onclick = ()=>answer(false);
+}
+function answer(ok){
+  const id = doorIds()[door.i]; door.res[door.i] = ok;
+  if(ok){ const t = trip(), x = byId(id); if(x.hasQty) setPacked(id, x.plan); else t.checked[id] = true; persist(); }
+  door.i++; doorRender();
+}
+function openDoor(){ if(!trip()) return; door={i:0,res:[]}; setActions(); doorRender(); $("#overlay").classList.add("on"); $("#ovyes").focus(); }
+function closeDoor(){ $("#overlay").classList.remove("on"); render(); }
+$("#doorbtn").onclick = openDoor; $("#ovclose").onclick = closeDoor;
+
+/* ===================== boot ===================== */
+lsLoad();
+if(!state.trips.length) ui.screen = "trips";
+else if(ui.screen === "wizard") ui.screen = "trips";
+render();
+</script>
+</body>
+</html>
